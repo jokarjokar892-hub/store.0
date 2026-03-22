@@ -13,23 +13,16 @@ st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 # -----------------------
 st.markdown("""
 <style>
-
-/* إخفاء الترس والقائمة */
 [data-testid="stToolbar"] {display: none !important;}
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
-/* خلفية حسب الثيم */
-.stApp {
-    background-color: var(--background-color);
-}
+.stApp {background-color: var(--background-color);}
 
-/* النص */
 h1, h2, h3, p, span {
     color: var(--text-color) !important;
 }
 
-/* كروت المنتجات */
 .product-card {
     padding: 15px;
     border-radius: 12px;
@@ -38,7 +31,6 @@ h1, h2, h3, p, span {
     border: 1px solid rgba(128,128,128,0.2);
 }
 
-/* زر واتساب */
 .whatsapp-btn {
     background-color: #25D366;
     color: white !important;
@@ -49,12 +41,10 @@ h1, h2, h3, p, span {
     font-weight: bold;
 }
 
-/* روابط */
 .social-link {
     display: inline-block;
     margin-top: 5px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -103,8 +93,7 @@ def load_data():
             df["السعر"] = 0
 
         return df
-    else:
-        return pd.DataFrame(columns=["رقم", "القطعة", "الموديل", "الكمية", "الحالة", "السعر", "الصورة"])
+    return pd.DataFrame(columns=["رقم", "القطعة", "الموديل", "الكمية", "الحالة", "السعر", "الصورة"])
 
 def save_data(df):
     df.to_csv(FILE_NAME, index=False)
@@ -112,7 +101,7 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# زر دخول (⋮)
+# زر دخول
 # -----------------------
 col1, col2 = st.columns([9,1])
 with col2:
@@ -156,14 +145,13 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    # إعدادات التواصل
     st.sidebar.header("📱 إعدادات التواصل")
 
     st.session_state.settings["whatsapp"] = st.sidebar.text_input("واتساب", st.session_state.settings["whatsapp"])
     st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
     st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
 
-    # ➕ إضافة منتج
+    # إضافة
     st.subheader("➕ إضافة قطعة")
 
     with st.form("add_form"):
@@ -197,7 +185,7 @@ if st.session_state.role == "admin":
             st.success("تمت الإضافة ✅")
             st.rerun()
 
-    # 📋 إدارة المنتجات
+    # تعديل
     st.subheader("📋 إدارة المنتجات")
 
     for i, row in df.iterrows():
@@ -244,25 +232,36 @@ else:
 
         if not search or search.lower() in str(row["القطعة"]).lower():
 
+            status = "✅ متوفر" if int(row["الكمية"]) > 0 else "❌ غير متوفر"
+
             st.markdown(f"""
             <div class="product-card">
                 <h3>📦 {row['القطعة']}</h3>
                 <p>💰 {row['السعر']} ₪</p>
+                <p>{status}</p>
+                <p>📦 الكمية: {row['الكمية']}</p>
             """, unsafe_allow_html=True)
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=200)
 
             whatsapp = st.session_state.settings["whatsapp"]
-
             msg = urllib.parse.quote("مرحبا بدي أطلب " + str(row["القطعة"]))
             link = f"https://wa.me/{whatsapp}?text={msg}"
 
-            st.markdown(f"""
-            <div style="margin-top:10px;">
-                <a class="whatsapp-btn" href="{link}">📞 واتساب</a><br><br>
-                <a class="social-link" href="{st.session_state.settings['facebook']}" target="_blank">📘 فيسبوك</a><br>
-                <a class="social-link" href="{st.session_state.settings['instagram']}" target="_blank">📷 إنستغرام</a>
-            </div>
-            </div>
-            """, unsafe_allow_html=True)
+            if int(row["الكمية"]) > 0:
+                st.markdown(f"""
+                <div style="margin-top:10px;">
+                    <a class="whatsapp-btn" href="{link}">📞 واتساب</a><br><br>
+                    <a class="social-link" href="{st.session_state.settings['facebook']}">📘 فيسبوك</a><br>
+                    <a class="social-link" href="{st.session_state.settings['instagram']}">📷 إنستغرام</a>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="margin-top:10px;">
+                    <p style="color:red;">🚫 غير متوفر حالياً</p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
