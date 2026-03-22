@@ -13,35 +13,6 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# ================== CSS ==================
-st.markdown("""
-<style>
-
-.product {
-    border:1px solid #ddd;
-    padding:15px;
-    border-radius:12px;
-    text-align:center;
-    margin-bottom:20px;
-}
-
-.decor {
-    position:absolute;
-    top:-10px;
-    left:-10px;
-    font-size:20px;
-}
-
-.decor2 {
-    position:absolute;
-    top:-10px;
-    right:-10px;
-    font-size:20px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
 # ================== إعدادات ==================
 if "settings" not in st.session_state:
     st.session_state.settings = {
@@ -50,13 +21,14 @@ if "settings" not in st.session_state:
         "instagram": "https://instagram.com/"
     }
 
+# ================== بيانات ==================
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
 if "products" not in st.session_state:
     st.session_state.products = [
-        {"name": "Intel i5", "price": 500, "image": "", "category": "معالج", "sale": False},
-        {"name": "RTX 3050", "price": 1100, "image": "", "category": "كرت شاشة", "sale": True}
+        {"name": "Intel i5", "price": 500, "image": "", "category": "معالج", "stock": 5},
+        {"name": "RTX 3050", "price": 1100, "image": "", "category": "كرت شاشة", "stock": 3}
     ]
 
 # ================== تحويل رقم ==================
@@ -65,39 +37,56 @@ def phone_format(p):
         return "970" + p[1:]
     return p
 
-# ================== لوحة تحكم مخفية ==================
-if "admin" in st.query_params:
+# ================== رابط المدير ==================
+query = st.query_params
+
+if query.get("admin") == "store123":
 
     st.title("🔒 لوحة التحكم")
 
+    # إضافة منتج
+    st.subheader("➕ إضافة منتج")
     name = st.text_input("اسم المنتج")
     price = st.number_input("السعر", 0)
-    image = st.text_input("رابط الصورة")
+    image = st.text_input("رابط الصورة أو اسم الملف")
 
     categories = ["كمبيوتر", "كرت شاشة", "معالج", "رام", "تخزين"]
     category = st.selectbox("القسم", categories)
 
-    sale = st.checkbox("تخفيض")
+    stock = st.number_input("الكمية المتوفرة", 0)
 
-    if st.button("➕ إضافة منتج"):
+    if st.button("إضافة"):
         st.session_state.products.append({
             "name": name,
             "price": price,
             "image": image,
             "category": category,
-            "sale": sale
+            "stock": stock
         })
         st.success("تمت الإضافة")
 
+    # حذف منتج
+    st.subheader("🗑️ حذف منتج")
+    names = [p["name"] for p in st.session_state.products]
+    selected = st.selectbox("اختر المنتج", names)
+
+    if st.button("حذف"):
+        st.session_state.products = [p for p in st.session_state.products if p["name"] != selected]
+        st.success("تم الحذف")
+
+    # عرض المنتجات
+    st.subheader("📦 المنتجات الحالية")
+    st.write(st.session_state.products)
+
     st.stop()
 
-# ================== واجهة ==================
+# ================== واجهة المستخدم ==================
 st.title("🛒 المتجر")
 
 search = st.text_input("🔎 ابحث")
 
-all_categories = ["الكل", "كمبيوتر", "كرت شاشة", "معالج", "رام", "تخزين"]
-selected_cat = st.selectbox("📂 اختر قسم", all_categories)
+categories = ["الكل", "كمبيوتر", "كرت شاشة", "معالج", "رام", "تخزين"]
+selected_cat = st.selectbox("📂 اختر قسم", categories)
 
 cols = st.columns(3)
 
@@ -111,28 +100,33 @@ for i, p in enumerate(st.session_state.products):
 
     with cols[i % 3]:
 
-        st.markdown("<div class='product'>", unsafe_allow_html=True)
+        st.markdown("<div style='border:1px solid #ddd;padding:10px;border-radius:10px;'>", unsafe_allow_html=True)
 
-        # صورة + نجوم
+        # صورة
         if p["image"]:
-            st.markdown(f"""
-            <div style="position:relative;">
-                <img src="{p['image']}" width="100%">
-                <div class="decor">🌙✨</div>
-                <div class="decor2">⭐✨</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if p["image"].startswith("http"):
+                st.markdown(f"""
+                <div style="position:relative;">
+                    <img src="{p['image']}" width="100%">
+                    <div style="position:absolute;top:-10px;left:-10px;">🌙✨</div>
+                    <div style="position:absolute;top:-10px;right:-10px;">⭐✨</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.image(p["image"], use_container_width=True)
 
         st.write(f"### {p['name']}")
         st.write(f"💰 {p['price']} ₪")
+        st.write(f"📦 المتوفر: {p['stock']}")
 
-        if p["sale"]:
-            st.success("🔥 عرض خاص")
-
-        # زر سلة (مهم: key مختلف)
-        if st.button("🛒 أضف للسلة", key=f"cart_{i}"):
-            st.session_state.cart.append(p)
-            st.success("تمت الإضافة للسلة")
+        # زر سلة
+        if st.button("🛒 أضف للسلة", key=f"cart{i}"):
+            if p["stock"] > 0:
+                st.session_state.cart.append(p)
+                p["stock"] -= 1
+                st.success("تمت الإضافة")
+            else:
+                st.error("غير متوفر")
 
         # واتساب
         phone = phone_format(st.session_state.settings["whatsapp"])
@@ -153,11 +147,8 @@ st.subheader("🛒 السلة")
 total = 0
 
 for item in st.session_state.cart:
-    name = item.get("name", "منتج")
-    price = item.get("price", 0)
-
-    st.write(name, "-", price, "₪")
-    total += price
+    st.write(item["name"], "-", item["price"], "₪")
+    total += item["price"]
 
 st.write("### الإجمالي:", total, "₪")
 
@@ -167,10 +158,10 @@ if st.session_state.cart:
 
     text = "طلب:\n"
     for item in st.session_state.cart:
-        text += f"- {item.get('name')} ({item.get('price')}₪)\n"
+        text += f"- {item['name']} ({item['price']}₪)\n"
 
     text += f"\nالإجمالي: {total}₪"
 
     link = f"https://wa.me/{phone}?text={urllib.parse.quote(text)}"
 
-    st.markdown(f"<a href='{link}'>📦 إرسال الطلب كامل واتساب</a>", unsafe_allow_html=True)
+    st.markdown(f"<a href='{link}'>📦 إرسال الطلب عبر واتساب</a>", unsafe_allow_html=True)
