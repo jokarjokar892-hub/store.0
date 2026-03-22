@@ -1,17 +1,27 @@
 import streamlit as st
 import pandas as pd
 import os
+import urllib.parse
 
 # -----------------------
 # إعداد الصفحة
 # -----------------------
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
-# ✅ CSS متوافق مع كل الثيمات
+# -----------------------
+# 🔥 إخفاء الترس نهائيًا
+# -----------------------
 st.markdown("""
 <style>
 
-/* خلفية تعتمد على الثيم */
+/* إخفاء الترس والقائمة */
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* خلفية حسب الثيم */
 .stApp {
     background-color: var(--background-color);
 }
@@ -27,6 +37,7 @@ h1, h2, h3, p, span {
     border-radius: 12px;
     background-color: var(--secondary-background-color);
     margin-bottom: 15px;
+    border: 1px solid rgba(128,128,128,0.2);
 }
 
 /* زر واتساب */
@@ -37,13 +48,20 @@ h1, h2, h3, p, span {
     border-radius: 8px;
     text-decoration: none;
     display: inline-block;
+    font-weight: bold;
+}
+
+/* روابط */
+.social-link {
+    display: inline-block;
+    margin-top: 5px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------
-# 🔥 الهيدر
+# الهيدر
 # -----------------------
 st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 st.image("logo.png", use_container_width=True)
@@ -72,7 +90,7 @@ if "settings" not in st.session_state:
     }
 
 # -----------------------
-# ملف البيانات
+# البيانات
 # -----------------------
 FILE_NAME = "warehouse.csv"
 
@@ -96,10 +114,12 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# زر الإعدادات
+# زر دخول مخفي (بدون ما يشوفه الزبون)
 # -----------------------
-if st.button("⚙️"):
-    st.session_state.show_login = True
+col1, col2 = st.columns([9,1])
+with col2:
+    if st.button("⋮"):  # ثلاث نقاط بدل الترس
+        st.session_state.show_login = True
 
 # -----------------------
 # تسجيل الدخول
@@ -144,70 +164,6 @@ if st.session_state.role == "admin":
     st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
     st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
 
-    st.sidebar.header("➕ إضافة قطعة")
-
-    with st.sidebar.form("add_form"):
-        name = st.text_input("اسم القطعة")
-        model = st.text_input("الموديل")
-        qty = st.number_input("الكمية", min_value=1)
-        price = st.number_input("السعر", min_value=0)
-        status = st.selectbox("الحالة", ["جديد", "مستعمل", "للفحص"])
-        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
-
-        if st.form_submit_button("حفظ"):
-
-            img_path = ""
-
-            if image:
-                os.makedirs("images", exist_ok=True)
-                img_path = f"images/{image.name}"
-                with open(img_path, "wb") as f:
-                    f.write(image.getbuffer())
-
-            new_id = 1 if df.empty else int(df["رقم"].max()) + 1
-
-            new_row = pd.DataFrame(
-                [[new_id, name, model, qty, status, price, img_path]],
-                columns=df.columns
-            )
-
-            df = pd.concat([df, new_row], ignore_index=True)
-            save_data(df)
-
-            st.success("تمت الإضافة ✅")
-            st.rerun()
-
-    st.subheader("📋 المنتجات")
-
-    for i, row in df.iterrows():
-
-        with st.expander(f"{row['القطعة']}"):
-
-            if row["الصورة"] and os.path.exists(row["الصورة"]):
-                st.image(row["الصورة"], width=150)
-
-            new_name = st.text_input("الاسم", row["القطعة"], key=f"name{i}")
-            new_model = st.text_input("الموديل", row["الموديل"], key=f"model{i}")
-            new_qty = st.number_input("الكمية", value=int(row["الكمية"]), key=f"qty{i}")
-            new_price = st.number_input("السعر", value=int(row["السعر"]), key=f"price{i}")
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                if st.button("💾", key=f"save{i}"):
-                    df.at[i, "القطعة"] = new_name
-                    df.at[i, "الموديل"] = new_model
-                    df.at[i, "الكمية"] = new_qty
-                    df.at[i, "السعر"] = new_price
-                    save_data(df)
-                    st.rerun()
-
-            with col2:
-                if st.button("🗑", key=f"del{i}"):
-                    df = df.drop(i).reset_index(drop=True)
-                    save_data(df)
-                    st.rerun()
-
 # =========================
 # 👤 الزبون
 # =========================
@@ -219,7 +175,7 @@ else:
 
     for _, row in df.iterrows():
 
-        if search.lower() in str(row["القطعة"]).lower():
+        if not search or search.lower() in str(row["القطعة"]).lower():
 
             st.markdown(f"""
             <div class="product-card">
@@ -231,9 +187,16 @@ else:
                 st.image(row["الصورة"], width=200)
 
             whatsapp = st.session_state.settings["whatsapp"]
-            msg = f"مرحبا بدي أطلب {row['القطعة']}"
+
+            msg = urllib.parse.quote("مرحبا بدي أطلب " + str(row["القطعة"]))
             link = f"https://wa.me/{whatsapp}?text={msg}"
 
-            st.markdown(f'<a class="whatsapp-btn" href="{link}">📞 اطلب عبر واتساب</a>', unsafe_allow_html=True)
-
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="margin-top:10px;">
+                <a class="whatsapp-btn" href="{link}">📞 واتساب</a><br><br>
+                <a class="social-link" href="{st.session_state.settings['facebook']}" target="_blank">📘 فيسبوك</a><br>
+                <a class="social-link" href="{st.session_state.settings['instagram']}" target="_blank">📷 إنستغرام</a>
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
