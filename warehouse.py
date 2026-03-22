@@ -20,7 +20,7 @@ st.markdown("""
 # 🔥 الهيدر (مع لوجو)
 # -----------------------
 st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-st.image("logo.png", width=300)
+st.image("logo.png", use_container_width=True)
 st.markdown("""
 <h1 style='color:#1B4F72; font-size:50px;'>🛒 TechZone</h1>
 <p style='color:#555; font-size:20px;'>عالم التقنية - أفضل الأجهزة 🔥</p>
