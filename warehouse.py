@@ -14,7 +14,12 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-
+st.markdown("""
+<div style='text-align: center; padding: 30px; background-color:#f5f7fa; border-radius:15px;'>
+    <h1 style='color:#1B4F72; font-size:55px;'>🛒 TechZone</h1>
+    <p style='color:#555; font-size:22px;'>عالم التقنية - أفضل الأجهزة 🔥</p>
+</div>
+""", unsafe_allow_html=True)
 # -----------------------
 # الحالة
 # -----------------------
