@@ -1,5 +1,10 @@
 import streamlit as st
+import pandas as pd
+import os
 
+# -----------------------
+# إعداد الصفحة
+# -----------------------
 st.set_page_config(page_title="متجري", page_icon="🛒", layout="wide")
 
 st.markdown("""
@@ -9,13 +14,6 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-import pandas as pd
-import os
-
-# -----------------------
-# إعداد الصفحة
-# -----------------------
-st.set_page_config(page_title="المستودع", layout="wide")
 
 # -----------------------
 # الحالة
