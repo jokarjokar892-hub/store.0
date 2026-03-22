@@ -117,7 +117,7 @@ if st.session_state.show_login:
 
     # دالة تسجيل الدخول
     def login():
-        if st.session_state.password == "7G4E976D":
+        if st.session_state.password == "7B4E976D":
             st.session_state.role = "admin"
             st.session_state.show_login = False
             st.rerun()
