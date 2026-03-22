@@ -5,8 +5,9 @@ import os
 # -----------------------
 # إعداد الصفحة
 # -----------------------
-st.set_page_config(page_title="متجري", page_icon="🛒", layout="wide")
+st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
+# خلفية
 st.markdown("""
 <style>
 .stApp {
@@ -14,12 +15,22 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# -----------------------
+# 🔥 الهيدر (مع لوجو)
+# -----------------------
+st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+
+# ✅ لوجو (بدون أخطاء)
+st.image("https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg", width=120)
+
 st.markdown("""
-<div style='text-align: center; padding: 30px; background-color:#f5f7fa; border-radius:15px;'>
-    <h1 style='color:#1B4F72; font-size:55px;'>🛒 TechZone</h1>
-    <p style='color:#555; font-size:22px;'>عالم التقنية - أفضل الأجهزة 🔥</p>
-</div>
+<h1 style='color:#1B4F72; font-size:50px;'>🛒 TechZone</h1>
+<p style='color:#555; font-size:20px;'>عالم التقنية - أفضل الأجهزة 🔥</p>
 """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 # -----------------------
 # الحالة
 # -----------------------
@@ -29,12 +40,11 @@ if "role" not in st.session_state:
 if "show_login" not in st.session_state:
     st.session_state.show_login = False
 
-# إعدادات التواصل
 if "settings" not in st.session_state:
     st.session_state.settings = {
         "whatsapp": "0515906039",
-        "facebook": "https://www.facebook.com/profile.php?id=61554653581162&sk=about",
-        "instagram": "https://instagram.com/yourpage"
+        "facebook": "https://www.facebook.com/",
+        "instagram": "https://instagram.com/"
     }
 
 # -----------------------
@@ -62,13 +72,13 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# ⚙️ زر الترس
+# زر الإعدادات
 # -----------------------
 if st.button("⚙️"):
     st.session_state.show_login = True
 
 # -----------------------
-# 🔐 تسجيل دخول المدير
+# تسجيل الدخول
 # -----------------------
 if st.session_state.show_login:
 
@@ -94,7 +104,7 @@ if st.session_state.show_login:
     st.stop()
 
 # =========================
-# 👨‍💼 واجهة المدير
+# 👨‍💼 المدير
 # =========================
 if st.session_state.role == "admin":
 
@@ -104,20 +114,12 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    # إعدادات التواصل
+    # إعدادات
     st.sidebar.header("📱 إعدادات التواصل")
 
-    st.session_state.settings["whatsapp"] = st.sidebar.text_input(
-        "رقم الواتساب", st.session_state.settings["whatsapp"]
-    )
-
-    st.session_state.settings["facebook"] = st.sidebar.text_input(
-        "رابط فيسبوك", st.session_state.settings["facebook"]
-    )
-
-    st.session_state.settings["instagram"] = st.sidebar.text_input(
-        "رابط إنستغرام", st.session_state.settings["instagram"]
-    )
+    st.session_state.settings["whatsapp"] = st.sidebar.text_input("واتساب", st.session_state.settings["whatsapp"])
+    st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
+    st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
 
     # إضافة منتج
     st.sidebar.header("➕ إضافة قطعة")
@@ -128,11 +130,10 @@ if st.session_state.role == "admin":
         qty = st.number_input("الكمية", min_value=1)
         price = st.number_input("السعر", min_value=0)
         status = st.selectbox("الحالة", ["جديد", "مستعمل", "للفحص"])
-        image = st.file_uploader("📷 صورة المنتج", type=["png", "jpg", "jpeg"])
+        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
 
-        submitted = st.form_submit_button("حفظ")
+        if st.form_submit_button("حفظ"):
 
-        if submitted:
             img_path = ""
 
             if image:
@@ -151,95 +152,63 @@ if st.session_state.role == "admin":
             df = pd.concat([df, new_row], ignore_index=True)
             save_data(df)
 
-            st.success(f"تمت الإضافة ✅ رقم المنتج: #{new_id}")
+            st.success("تمت الإضافة ✅")
             st.rerun()
 
-    # إدارة المنتجات
-    st.subheader("📋 إدارة المنتجات")
+    # إدارة
+    st.subheader("📋 المنتجات")
 
     for i, row in df.iterrows():
 
-        with st.expander(f"#{row['رقم']} - {row['القطعة']}"):
+        with st.expander(f"{row['القطعة']}"):
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=150)
 
-            new_name = st.text_input("اسم القطعة", row["القطعة"], key=f"name{i}")
+            new_name = st.text_input("الاسم", row["القطعة"], key=f"name{i}")
             new_model = st.text_input("الموديل", row["الموديل"], key=f"model{i}")
             new_qty = st.number_input("الكمية", value=int(row["الكمية"]), key=f"qty{i}")
-            new_price = st.number_input(
-    "السعر",
-    value=int(row["السعر"]) if pd.notna(row["السعر"]) else 0,
-    key=f"price{i}"
-)
-            new_status = st.selectbox(
-                "الحالة",
-                ["جديد", "مستعمل", "للفحص"],
-                index=["جديد", "مستعمل", "للفحص"].index(row["الحالة"]),
-                key=f"status{i}"
-            )
-
-            new_image = st.file_uploader("تغيير الصورة", key=f"img{i}")
+            new_price = st.number_input("السعر", value=int(row["السعر"]), key=f"price{i}")
 
             col1, col2 = st.columns(2)
 
             with col1:
-                if st.button("💾 حفظ", key=f"save{i}"):
-
+                if st.button("💾", key=f"save{i}"):
                     df.at[i, "القطعة"] = new_name
                     df.at[i, "الموديل"] = new_model
                     df.at[i, "الكمية"] = new_qty
-                    df.at[i, "الحالة"] = new_status
                     df.at[i, "السعر"] = new_price
-
-                    if new_image:
-                        img_path = f"images/{new_image.name}"
-                        with open(img_path, "wb") as f:
-                            f.write(new_image.getbuffer())
-                        df.at[i, "الصورة"] = img_path
-
                     save_data(df)
-                    st.success("تم التعديل ✅")
                     st.rerun()
 
             with col2:
-                if st.button("🗑 حذف", key=f"delete{i}"):
+                if st.button("🗑", key=f"del{i}"):
                     df = df.drop(i).reset_index(drop=True)
                     save_data(df)
-                    st.warning("تم الحذف ❌")
                     st.rerun()
 
 # =========================
-# 👤 واجهة الزبون
+# 👤 الزبون
 # =========================
 else:
 
-    st.title("🛒 عرض المنتجات")
+    st.title("🛒 المنتجات")
 
     search = st.text_input("🔍 ابحث")
 
-    for index, row in df.iterrows():
+    for _, row in df.iterrows():
 
         if search.lower() in str(row["القطعة"]).lower():
 
             st.markdown(f"### 📦 {row['القطعة']}")
-            st.write(f"🔧 الموديل: {row['الموديل']}")
-            st.write(f"💰 السعر: {row['السعر']} شيكل ₪")
-            st.write(f"📊 المتوفر: {row['الكمية']}")
-            st.write(f"📌 الحالة: {row['الحالة']}")
+            st.write(f"💰 {row['السعر']} ₪")
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=200)
 
-            # زر تواصل واتساب
             whatsapp = st.session_state.settings["whatsapp"]
-            message = f"مرحبا، بدي أطلب {row['القطعة']}"
-            wa_link = f"https://wa.me/{whatsapp}?text={message}"
+            msg = f"مرحبا بدي أطلب {row['القطعة']}"
+            link = f"https://wa.me/{whatsapp}?text={msg}"
 
-            st.markdown(f"[📞 اطلب عبر واتساب]({wa_link})")
-
-            # باقي الروابط
-            st.markdown(f"[فيسبوك]({st.session_state.settings['facebook']})")
-            st.markdown(f"[إنستغرام]({st.session_state.settings['instagram']})")
-
+            st.markdown(f"[📞 اطلب عبر واتساب]({link})")
             st.markdown("---")
