@@ -13,7 +13,7 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# ================== CSS تصميم ==================
+# ================== CSS ==================
 st.markdown("""
 <style>
 
@@ -22,11 +22,7 @@ st.markdown("""
     padding:15px;
     border-radius:12px;
     text-align:center;
-    background:#fff;
-}
-
-[data-theme="dark"] .product {
-    background:#1e1e1e;
+    margin-bottom:20px;
 }
 
 .decor {
@@ -34,7 +30,6 @@ st.markdown("""
     top:-10px;
     left:-10px;
     font-size:20px;
-    z-index:999;
 }
 
 .decor2 {
@@ -42,11 +37,6 @@ st.markdown("""
     top:-10px;
     right:-10px;
     font-size:20px;
-    z-index:999;
-}
-
-img {
-    border-radius:10px;
 }
 
 </style>
@@ -65,7 +55,7 @@ if "cart" not in st.session_state:
 
 if "products" not in st.session_state:
     st.session_state.products = [
-        {"name": "Intel i5", "price": 500, "image": "", "category": "كمبيوتر", "sale": False},
+        {"name": "Intel i5", "price": 500, "image": "", "category": "معالج", "sale": False},
         {"name": "RTX 3050", "price": 1100, "image": "", "category": "كرت شاشة", "sale": True}
     ]
 
@@ -75,7 +65,7 @@ def phone_format(p):
         return "970" + p[1:]
     return p
 
-# ================== لوحة التحكم المخفية ==================
+# ================== لوحة تحكم مخفية ==================
 if "admin" in st.query_params:
 
     st.title("🔒 لوحة التحكم")
@@ -83,10 +73,13 @@ if "admin" in st.query_params:
     name = st.text_input("اسم المنتج")
     price = st.number_input("السعر", 0)
     image = st.text_input("رابط الصورة")
-    category = st.text_input("القسم")
+
+    categories = ["كمبيوتر", "كرت شاشة", "معالج", "رام", "تخزين"]
+    category = st.selectbox("القسم", categories)
+
     sale = st.checkbox("تخفيض")
 
-    if st.button("➕ إضافة"):
+    if st.button("➕ إضافة منتج"):
         st.session_state.products.append({
             "name": name,
             "price": price,
@@ -96,18 +89,15 @@ if "admin" in st.query_params:
         })
         st.success("تمت الإضافة")
 
-    st.write("### المنتجات الحالية")
-    st.write(st.session_state.products)
-
     st.stop()
 
-# ================== الواجهة ==================
+# ================== واجهة ==================
 st.title("🛒 المتجر")
 
 search = st.text_input("🔎 ابحث")
 
-categories = list(set([p["category"] for p in st.session_state.products]))
-selected_cat = st.selectbox("📂 اختر قسم", ["الكل"] + categories)
+all_categories = ["الكل", "كمبيوتر", "كرت شاشة", "معالج", "رام", "تخزين"]
+selected_cat = st.selectbox("📂 اختر قسم", all_categories)
 
 cols = st.columns(3)
 
@@ -121,9 +111,9 @@ for i, p in enumerate(st.session_state.products):
 
     with cols[i % 3]:
 
-        st.markdown(f"<div class='product'>", unsafe_allow_html=True)
+        st.markdown("<div class='product'>", unsafe_allow_html=True)
 
-        # صورة + ديكور
+        # صورة + نجوم
         if p["image"]:
             st.markdown(f"""
             <div style="position:relative;">
@@ -139,12 +129,12 @@ for i, p in enumerate(st.session_state.products):
         if p["sale"]:
             st.success("🔥 عرض خاص")
 
-        # زر سلة
-        if st.button("🛒 أضف للسلة", key=f"cart{i}"):
+        # زر سلة (مهم: key مختلف)
+        if st.button("🛒 أضف للسلة", key=f"cart_{i}"):
             st.session_state.cart.append(p)
-            st.success("تمت الإضافة")
+            st.success("تمت الإضافة للسلة")
 
-        # روابط
+        # واتساب
         phone = phone_format(st.session_state.settings["whatsapp"])
         msg = urllib.parse.quote("مرحبا بدي طلب " + p["name"])
         link = f"https://wa.me/{phone}?text={msg}"
@@ -163,20 +153,24 @@ st.subheader("🛒 السلة")
 total = 0
 
 for item in st.session_state.cart:
-    st.write(item["name"], "-", item["price"], "₪")
-    total += item["price"]
+    name = item.get("name", "منتج")
+    price = item.get("price", 0)
+
+    st.write(name, "-", price, "₪")
+    total += price
 
 st.write("### الإجمالي:", total, "₪")
 
+# إرسال الطلب
 if st.session_state.cart:
     phone = phone_format(st.session_state.settings["whatsapp"])
 
     text = "طلب:\n"
     for item in st.session_state.cart:
-        text += f"- {item['name']} ({item['price']}₪)\n"
+        text += f"- {item.get('name')} ({item.get('price')}₪)\n"
 
     text += f"\nالإجمالي: {total}₪"
 
     link = f"https://wa.me/{phone}?text={urllib.parse.quote(text)}"
 
-    st.markdown(f"<a href='{link}'>📦 إرسال الطلب كامل</a>", unsafe_allow_html=True)
+    st.markdown(f"<a href='{link}'>📦 إرسال الطلب كامل واتساب</a>", unsafe_allow_html=True)
