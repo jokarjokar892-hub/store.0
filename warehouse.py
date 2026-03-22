@@ -77,6 +77,10 @@ if "settings" not in st.session_state:
         "instagram": "https://instagram.com/"
     }
 
+# 🛒 السلة (إضافة)
+if "cart" not in st.session_state:
+    st.session_state.cart = []
+
 # -----------------------
 # البيانات
 # -----------------------
@@ -115,7 +119,6 @@ if st.session_state.show_login:
 
     st.subheader("🔐 دخول المدير")
 
-    # دالة تسجيل الدخول
     def login():
         if st.session_state.password == "7B4E976D":
             st.session_state.role = "admin"
@@ -124,7 +127,6 @@ if st.session_state.show_login:
         else:
             st.error("كلمة السر غلط ❌")
 
-    # حقل كلمة السر مع Enter
     password = st.text_input(
         "كلمة السر",
         type="password",
@@ -167,7 +169,6 @@ if st.session_state.role == "admin":
     st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
     st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
 
-    # إضافة
     st.subheader("➕ إضافة قطعة")
 
     with st.form("add_form"):
@@ -201,7 +202,6 @@ if st.session_state.role == "admin":
             st.success("تمت الإضافة ✅")
             st.rerun()
 
-    # تعديل
     st.subheader("📋 إدارة المنتجات")
 
     for i, row in df.iterrows():
@@ -261,19 +261,35 @@ else:
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=200)
 
-            whatsapp = st.session_state.settings["whatsapp"]
-            msg = urllib.parse.quote("مرحبا بدي أطلب " + str(row["القطعة"]))
-            link = f"https://wa.me/{whatsapp}?text={msg}"
-
             if int(row["الكمية"]) > 0:
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button(f"🛒 أضف للسلة {row['رقم']}"):
+                        st.session_state.cart.append({
+                            "name": row["القطعة"],
+                            "price": row["السعر"]
+                        })
+                        st.success("تمت الإضافة للسلة ✅")
+
+                with col2:
+                    whatsapp = st.session_state.settings["whatsapp"]
+                    msg = urllib.parse.quote("مرحبا بدي أطلب " + str(row["القطعة"]))
+                    link = f"https://wa.me/{whatsapp}?text={msg}"
+
+                    st.markdown(f"""
+                    <a class="whatsapp-btn" href="{link}">📞 شراء مباشر</a>
+                    """, unsafe_allow_html=True)
+
                 st.markdown(f"""
                 <div style="margin-top:10px;">
-                    <a class="whatsapp-btn" href="{link}">📞 واتساب</a><br><br>
                     <a class="social-link" href="{st.session_state.settings['facebook']}">📘 فيسبوك</a><br>
                     <a class="social-link" href="{st.session_state.settings['instagram']}">📷 إنستغرام</a>
                 </div>
                 </div>
                 """, unsafe_allow_html=True)
+
             else:
                 st.markdown(f"""
                 <div style="margin-top:10px;">
@@ -281,3 +297,45 @@ else:
                 </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+    # =========================
+    # 🛒 السلة
+    # =========================
+    st.markdown("---")
+    st.header("🛒 السلة")
+
+    total = 0
+    order_text = ""
+
+    if len(st.session_state.cart) == 0:
+        st.info("السلة فاضية 🛒")
+
+    for i, item in enumerate(st.session_state.cart):
+
+        col1, col2 = st.columns([3,1])
+
+        with col1:
+            st.write(f"{item['name']} - {item['price']} ₪")
+
+        with col2:
+            if st.button(f"❌ حذف {i}"):
+                st.session_state.cart.pop(i)
+                st.rerun()
+
+        total += item["price"]
+        order_text += f"{item['name']} - {item['price']} ₪\n"
+
+    st.write(f"💰 المجموع: {total} ₪")
+
+    if len(st.session_state.cart) > 0:
+        whatsapp = st.session_state.settings["whatsapp"]
+        msg = urllib.parse.quote("طلب جديد:\n" + order_text + f"\nالمجموع: {total} ₪")
+        link = f"https://wa.me/{whatsapp}?text={msg}"
+
+        st.markdown(f"""
+        <a class="whatsapp-btn" href="{link}">📲 إرسال الطلب كامل</a>
+        """, unsafe_allow_html=True)
+
+        if st.button("🗑 تفريغ السلة"):
+            st.session_state.cart = []
+            st.rerun()
