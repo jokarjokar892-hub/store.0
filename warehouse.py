@@ -235,5 +235,11 @@ else:
             link = f"https://wa.me/{whatsapp}?text={msg}"
 
             st.markdown(f'<a class="whatsapp-btn" href="{link}">📞 اطلب عبر واتساب</a>', unsafe_allow_html=True)
-
+st.markdown(f"""
+<div style="margin-top:10px;">
+    <a class="whatsapp-btn" href="{link}">📞 واتساب</a><br><br>
+    <a href="{st.session_state.settings['facebook']}" target="_blank">📘 فيسبوك</a><br>
+    <a href="{st.session_state.settings['instagram']}" target="_blank">📸 إنستغرام</a>
+</div>
+""", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
