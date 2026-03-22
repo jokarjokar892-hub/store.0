@@ -27,8 +27,8 @@ if "show_login" not in st.session_state:
 # إعدادات التواصل
 if "settings" not in st.session_state:
     st.session_state.settings = {
-        "whatsapp": "966XXXXXXXX",
-        "facebook": "https://facebook.com/yourpage",
+        "whatsapp": "0515906039",
+        "facebook": "https://www.facebook.com/profile.php?id=61554653581162&sk=about",
         "instagram": "https://instagram.com/yourpage"
     }
 
