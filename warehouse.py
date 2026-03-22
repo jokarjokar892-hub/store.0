@@ -120,7 +120,7 @@ if st.session_state.show_login:
 
     with col1:
         if st.button("دخول"):
-            if password == "7D4E976D":
+            if password == "7B4E976D":
                 st.session_state.role = "admin"
                 st.session_state.show_login = False
                 st.rerun()
