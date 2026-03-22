@@ -7,23 +7,50 @@ import os
 # -----------------------
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
-# خلفية
+# ✅ CSS متوافق مع كل الثيمات
 st.markdown("""
 <style>
+
+/* خلفية تعتمد على الثيم */
 .stApp {
-    background-color: #f5f7fa;
+    background-color: var(--background-color);
 }
+
+/* النص */
+h1, h2, h3, p, span {
+    color: var(--text-color) !important;
+}
+
+/* كروت المنتجات */
+.product-card {
+    padding: 15px;
+    border-radius: 12px;
+    background-color: var(--secondary-background-color);
+    margin-bottom: 15px;
+}
+
+/* زر واتساب */
+.whatsapp-btn {
+    background-color: #25D366;
+    color: white !important;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------
-# 🔥 الهيدر (مع لوجو)
+# 🔥 الهيدر
 # -----------------------
 st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 st.image("logo.png", use_container_width=True)
+
 st.markdown("""
-<h1 style='color:#1B4F72; font-size:50px;'>🛒 TechZone</h1>
-<p style='color:#555; font-size:20px;'>عالم التقنية - أفضل الأجهزة 🔥</p>
+<h1>🛒 TechZone</h1>
+<p>عالم التقنية - أفضل الأجهزة 🔥</p>
 """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
@@ -111,14 +138,12 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    # إعدادات
     st.sidebar.header("📱 إعدادات التواصل")
 
     st.session_state.settings["whatsapp"] = st.sidebar.text_input("واتساب", st.session_state.settings["whatsapp"])
     st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
     st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
 
-    # إضافة منتج
     st.sidebar.header("➕ إضافة قطعة")
 
     with st.sidebar.form("add_form"):
@@ -152,7 +177,6 @@ if st.session_state.role == "admin":
             st.success("تمت الإضافة ✅")
             st.rerun()
 
-    # إدارة
     st.subheader("📋 المنتجات")
 
     for i, row in df.iterrows():
@@ -197,8 +221,11 @@ else:
 
         if search.lower() in str(row["القطعة"]).lower():
 
-            st.markdown(f"### 📦 {row['القطعة']}")
-            st.write(f"💰 {row['السعر']} ₪")
+            st.markdown(f"""
+            <div class="product-card">
+                <h3>📦 {row['القطعة']}</h3>
+                <p>💰 {row['السعر']} ₪</p>
+            """, unsafe_allow_html=True)
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=200)
@@ -207,5 +234,6 @@ else:
             msg = f"مرحبا بدي أطلب {row['القطعة']}"
             link = f"https://wa.me/{whatsapp}?text={msg}"
 
-            st.markdown(f"[📞 اطلب عبر واتساب]({link})")
-            st.markdown("---")
+            st.markdown(f'<a class="whatsapp-btn" href="{link}">📞 اطلب عبر واتساب</a>', unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True)
