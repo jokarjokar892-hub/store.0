@@ -162,8 +162,11 @@ if st.session_state.role == "admin":
             new_name = st.text_input("اسم القطعة", row["القطعة"], key=f"name{i}")
             new_model = st.text_input("الموديل", row["الموديل"], key=f"model{i}")
             new_qty = st.number_input("الكمية", value=int(row["الكمية"]), key=f"qty{i}")
-            new_price = st.number_input("السعر", value=int(row["السعر"]), key=f"price{i}")
-
+            new_price = st.number_input(
+    "السعر",
+    value=int(row["السعر"]) if pd.notna(row["السعر"]) else 0,
+    key=f"price{i}"
+)
             new_status = st.selectbox(
                 "الحالة",
                 ["جديد", "مستعمل", "للفحص"],
