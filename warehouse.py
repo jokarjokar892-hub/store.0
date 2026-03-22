@@ -114,13 +114,29 @@ with col2:
 if st.session_state.show_login:
 
     st.subheader("🔐 دخول المدير")
-    password = st.text_input("كلمة السر", type="password")
+
+    # دالة تسجيل الدخول
+    def login():
+        if st.session_state.password == "7G4E976D":
+            st.session_state.role = "admin"
+            st.session_state.show_login = False
+            st.rerun()
+        else:
+            st.error("كلمة السر غلط ❌")
+
+    # حقل كلمة السر مع Enter
+    password = st.text_input(
+        "كلمة السر",
+        type="password",
+        key="password",
+        on_change=login
+    )
 
     col1, col2 = st.columns(2)
 
     with col1:
         if st.button("دخول"):
-            if password == "7B4E976D":
+            if password == "7G4E976D":
                 st.session_state.role = "admin"
                 st.session_state.show_login = False
                 st.rerun()
