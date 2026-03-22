@@ -1,4 +1,14 @@
 import streamlit as st
+
+st.set_page_config(page_title="متجري", page_icon="🛒", layout="wide")
+
+st.markdown("""
+<style>
+.stApp {
+    background-color: #f5f7fa;
+}
+</style>
+""", unsafe_allow_html=True)
 import pandas as pd
 import os
 
