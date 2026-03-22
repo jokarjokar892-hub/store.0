@@ -14,6 +14,9 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+st.image("logo.png", width=150)
+st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("""
 <div style='text-align: center; padding: 30px; background-color:#f5f7fa; border-radius:15px;'>
     <h1 style='color:#1B4F72; font-size:55px;'>🛒 TechZone</h1>
