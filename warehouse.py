@@ -9,15 +9,13 @@ import urllib.parse
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
 # -----------------------
-# 🔥 إخفاء الترس نهائيًا
+# 🔥 CSS + إخفاء الترس
 # -----------------------
 st.markdown("""
 <style>
 
 /* إخفاء الترس والقائمة */
-[data-testid="stToolbar"] {
-    display: none !important;
-}
+[data-testid="stToolbar"] {display: none !important;}
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
@@ -114,11 +112,11 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# زر دخول مخفي (بدون ما يشوفه الزبون)
+# زر دخول (⋮)
 # -----------------------
 col1, col2 = st.columns([9,1])
 with col2:
-    if st.button("⋮"):  # ثلاث نقاط بدل الترس
+    if st.button("⋮"):
         st.session_state.show_login = True
 
 # -----------------------
@@ -158,11 +156,80 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
+    # إعدادات التواصل
     st.sidebar.header("📱 إعدادات التواصل")
 
     st.session_state.settings["whatsapp"] = st.sidebar.text_input("واتساب", st.session_state.settings["whatsapp"])
     st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
     st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
+
+    # ➕ إضافة منتج
+    st.subheader("➕ إضافة قطعة")
+
+    with st.form("add_form"):
+        name = st.text_input("اسم القطعة")
+        model = st.text_input("الموديل")
+        qty = st.number_input("الكمية", min_value=1)
+        price = st.number_input("السعر", min_value=0)
+        status = st.selectbox("الحالة", ["جديد", "مستعمل", "للفحص"])
+        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
+
+        if st.form_submit_button("حفظ"):
+
+            img_path = ""
+
+            if image:
+                os.makedirs("images", exist_ok=True)
+                img_path = f"images/{image.name}"
+                with open(img_path, "wb") as f:
+                    f.write(image.getbuffer())
+
+            new_id = 1 if df.empty else int(df["رقم"].max()) + 1
+
+            new_row = pd.DataFrame(
+                [[new_id, name, model, qty, status, price, img_path]],
+                columns=df.columns
+            )
+
+            df = pd.concat([df, new_row], ignore_index=True)
+            save_data(df)
+
+            st.success("تمت الإضافة ✅")
+            st.rerun()
+
+    # 📋 إدارة المنتجات
+    st.subheader("📋 إدارة المنتجات")
+
+    for i, row in df.iterrows():
+
+        with st.expander(f"{row['القطعة']}"):
+
+            if row["الصورة"] and os.path.exists(row["الصورة"]):
+                st.image(row["الصورة"], width=150)
+
+            new_name = st.text_input("الاسم", row["القطعة"], key=f"name{i}")
+            new_model = st.text_input("الموديل", row["الموديل"], key=f"model{i}")
+            new_qty = st.number_input("الكمية", value=int(row["الكمية"]), key=f"qty{i}")
+            new_price = st.number_input("السعر", value=int(row["السعر"]), key=f"price{i}")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("💾 حفظ", key=f"save{i}"):
+                    df.at[i, "القطعة"] = new_name
+                    df.at[i, "الموديل"] = new_model
+                    df.at[i, "الكمية"] = new_qty
+                    df.at[i, "السعر"] = new_price
+                    save_data(df)
+                    st.success("تم التعديل ✅")
+                    st.rerun()
+
+            with col2:
+                if st.button("🗑 حذف", key=f"del{i}"):
+                    df = df.drop(i).reset_index(drop=True)
+                    save_data(df)
+                    st.warning("تم الحذف 🗑")
+                    st.rerun()
 
 # =========================
 # 👤 الزبون
@@ -199,4 +266,3 @@ else:
             </div>
             </div>
             """, unsafe_allow_html=True)
-            
