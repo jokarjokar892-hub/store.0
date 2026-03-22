@@ -3,76 +3,46 @@ import pandas as pd
 import os
 import urllib.parse
 
+# -----------------------
+# إعداد الصفحة
+# -----------------------
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
-# 🌙 CSS + نجوم متحركة
+# -----------------------
+# CSS + زينة
+# -----------------------
 st.markdown("""
 <style>
-
-/* إخفاء الترس */
 [data-testid="stToolbar"] {display:none;}
 #MainMenu {visibility:hidden;}
 footer {visibility:hidden;}
 
-/* خلفية */
 .stApp {
     background: linear-gradient(to bottom, #0f172a, #020617);
     color: white;
 }
 
-/* نجوم */
-body::before {
-    content: "";
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(white 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: moveStars 60s linear infinite;
-    z-index: -1;
-}
-
-@keyframes moveStars {
-    from {transform: translateY(0);}
-    to {transform: translateY(-1000px);}
-}
-
-/* كروت */
 .product-card {
     padding: 15px;
-    border-radius: 15px;
+    border-radius: 12px;
     background: #1e293b;
-    margin: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    margin-bottom: 15px;
 }
 
-/* زر */
 .whatsapp-btn {
     background-color: #25D366;
+    color: white;
     padding: 8px;
     border-radius: 8px;
-    color: white;
     text-decoration: none;
 }
-
-/* الهلال */
-.moon {
-    font-size: 30px;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0% {transform: translateY(0);}
-    50% {transform: translateY(-10px);}
-    100% {transform: translateY(0);}
-}
-
 </style>
 """, unsafe_allow_html=True)
 
-# 🌙 هيدر
+# -----------------------
+# الهيدر
+# -----------------------
 st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-st.markdown("<div class='moon'>🌙✨</div>", unsafe_allow_html=True)
 st.image("logo.png", use_container_width=True)
 st.markdown("<h1>🛒 TechZone</h1>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
@@ -86,6 +56,13 @@ if "role" not in st.session_state:
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
+if "settings" not in st.session_state:
+    st.session_state.settings = {
+        "whatsapp": "0515906039",
+        "facebook": "https://www.facebook.com/",
+        "instagram": "https://instagram.com/"
+    }
+
 # -----------------------
 # البيانات
 # -----------------------
@@ -93,31 +70,124 @@ FILE_NAME = "warehouse.csv"
 
 def load_data():
     if os.path.exists(FILE_NAME):
-        return pd.read_csv(FILE_NAME)
-    return pd.DataFrame(columns=["القسم","القطعة","الكمية","السعر","الصورة"])
+        df = pd.read_csv(FILE_NAME)
+
+        if "القسم" not in df.columns:
+            df["القسم"] = "عام"
+
+        if "رقم" not in df.columns:
+            df.insert(0, "رقم", range(1, len(df) + 1))
+
+        if "السعر" not in df.columns:
+            df["السعر"] = 0
+
+        return df
+
+    return pd.DataFrame(columns=["رقم","القسم","القطعة","الموديل","الكمية","الحالة","السعر","الصورة"])
+
+def save_data(df):
+    df.to_csv(FILE_NAME, index=False)
 
 df = load_data()
 
 # -----------------------
-# فلترة
+# زر دخول
 # -----------------------
-st.sidebar.title("📂 الأقسام")
+col1, col2 = st.columns([9,1])
+with col2:
+    if st.button("⋮"):
+        st.session_state.show_login = True
 
-categories = ["الكل"] + list(df["القسم"].dropna().unique())
-selected_category = st.sidebar.selectbox("اختر", categories)
-
-search = st.text_input("🔍 بحث")
+if "show_login" not in st.session_state:
+    st.session_state.show_login = False
 
 # -----------------------
-# المنتجات
+# تسجيل الدخول
 # -----------------------
-cols = st.columns(3)
+if st.session_state.show_login:
 
-for i, row in df.iterrows():
+    st.subheader("🔐 دخول المدير")
 
-    if (selected_category == "الكل" or row["القسم"] == selected_category) and (not search or search.lower() in str(row["القطعة"]).lower()):
+    def login():
+        if st.session_state.password == "7G4E976D":
+            st.session_state.role = "admin"
+            st.session_state.show_login = False
+            st.rerun()
+        else:
+            st.error("كلمة السر غلط ❌")
 
-        with cols[i % 3]:
+    password = st.text_input("كلمة السر", type="password", key="password", on_change=login)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("دخول"):
+            login()
+
+    with col2:
+        if st.button("إلغاء"):
+            st.session_state.show_login = False
+            st.rerun()
+
+    st.stop()
+
+# =========================
+# 👨‍💼 المدير
+# =========================
+if st.session_state.role == "admin":
+
+    st.title("📦 لوحة التحكم")
+
+    if st.button("تسجيل الخروج"):
+        st.session_state.role = "guest"
+        st.rerun()
+
+    st.sidebar.header("📱 إعدادات التواصل")
+    st.session_state.settings["whatsapp"] = st.sidebar.text_input("واتساب", st.session_state.settings["whatsapp"])
+    st.session_state.settings["facebook"] = st.sidebar.text_input("فيسبوك", st.session_state.settings["facebook"])
+    st.session_state.settings["instagram"] = st.sidebar.text_input("إنستغرام", st.session_state.settings["instagram"])
+
+    # ➕ إضافة
+    st.subheader("➕ إضافة قطعة")
+
+    with st.form("add"):
+        category = st.text_input("القسم")
+        name = st.text_input("اسم القطعة")
+        model = st.text_input("الموديل")
+        qty = st.number_input("الكمية", min_value=0)
+        price = st.number_input("السعر", min_value=0)
+        image = st.file_uploader("صورة")
+
+        if st.form_submit_button("حفظ"):
+            path = ""
+            if image:
+                os.makedirs("images", exist_ok=True)
+                path = f"images/{image.name}"
+                with open(path, "wb") as f:
+                    f.write(image.getbuffer())
+
+            new_row = pd.DataFrame([[len(df)+1, category, name, model, qty, "جديد", price, path]], columns=df.columns)
+            df = pd.concat([df, new_row], ignore_index=True)
+            save_data(df)
+            st.success("تمت الإضافة")
+            st.rerun()
+
+# =========================
+# 👤 الزبون
+# =========================
+else:
+
+    st.title("🛒 المنتجات")
+
+    # فلترة
+    categories = ["الكل"] + list(df["القسم"].dropna().unique())
+    selected_category = st.selectbox("📂 القسم", categories)
+
+    search = st.text_input("🔍 بحث")
+
+    for _, row in df.iterrows():
+
+        if (selected_category == "الكل" or row["القسم"] == selected_category) and (not search or search.lower() in str(row["القطعة"]).lower()):
 
             status = "✅ متوفر" if int(row["الكمية"]) > 0 else "❌ غير متوفر"
             discount = int(row["السعر"]) * 0.9
@@ -132,19 +202,18 @@ for i, row in df.iterrows():
             """, unsafe_allow_html=True)
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
-                st.image(row["الصورة"])
+                st.image(row["الصورة"], width=200)
 
             if int(row["الكمية"]) > 0:
-                if st.button(f"🛒 أضف {i}"):
+                if st.button(f"🛒 أضف {row['رقم']}"):
                     st.session_state.cart.append(row["القطعة"])
-                    st.success("تمت الإضافة ✅")
 
-            whatsapp = "0515906039"
-            msg = urllib.parse.quote("بدي أطلب " + str(row["القطعة"]))
+            whatsapp = st.session_state.settings["whatsapp"]
+            msg = urllib.parse.quote("مرحبا بدي أطلب " + str(row["القطعة"]))
             link = f"https://wa.me/{whatsapp}?text={msg}"
 
             if int(row["الكمية"]) > 0:
-                st.markdown(f"<a class='whatsapp-btn' href='{link}'>واتساب</a>", unsafe_allow_html=True)
+                st.markdown(f"<a class='whatsapp-btn' href='{link}'>📞 واتساب</a>", unsafe_allow_html=True)
 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -154,12 +223,9 @@ for i, row in df.iterrows():
 st.sidebar.title("🛒 السلة")
 
 for item in st.session_state.cart:
-    st.sidebar.write("✔ " + item)
+    st.sidebar.write(item)
 
-# -----------------------
-# إرسال الطلب
-# -----------------------
-if st.sidebar.button("📦 إرسال الطلب"):
+if st.sidebar.button("إرسال الطلب"):
     text = "طلب:\n" + "\n".join(st.session_state.cart)
-    link = f"https://wa.me/0515906039?text={urllib.parse.quote(text)}"
-    st.sidebar.markdown(f"[إرسال عبر واتساب]({link})")
+    link = f"https://wa.me/{st.session_state.settings['whatsapp']}?text={urllib.parse.quote(text)}"
+    st.sidebar.markdown(f"[إرسال واتساب]({link})")
