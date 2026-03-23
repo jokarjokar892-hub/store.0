@@ -171,7 +171,6 @@ if st.session_state.show_login:
         if st.session_state.password == "7B4E976D":
             st.session_state.role = "admin"
             st.session_state.show_login = False
-            st.rerun()
         else:
             st.error("كلمة السر غلط ❌")
 
@@ -179,6 +178,7 @@ if st.session_state.show_login:
 
     if st.button("دخول"):
         login()
+        st.rerun()   # ✅ هون مسموح
 
     if st.button("إلغاء"):
         st.session_state.show_login = False
