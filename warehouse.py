@@ -9,7 +9,7 @@ import urllib.parse
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
 # -----------------------
-# 🔥 CSS + إخفاء الترس + تزيين اللوجو
+# 🔥 CSS
 # -----------------------
 st.markdown("""
 <style>
@@ -17,18 +17,11 @@ st.markdown("""
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
-.stApp {background-color: var(--background-color);}
-
-h1, h2, h3, p, span {
-    color: var(--text-color) !important;
-}
-
 .product-card {
     padding: 15px;
     border-radius: 12px;
-    background-color: var(--secondary-background-color);
+    background-color: #1e1e1e;
     margin-bottom: 15px;
-    border: 1px solid rgba(128,128,128,0.2);
 }
 
 .whatsapp-btn {
@@ -40,73 +33,19 @@ h1, h2, h3, p, span {
     display: inline-block;
     font-weight: bold;
 }
-
-.social-link {
-    display: inline-block;
-    margin-top: 5px;
-}
-
-/* 🌙✨ تزيين اللوجو */
-.header-decor {
-    position: relative;
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 20px;
-}
-
-.logo-img {
-    width: 100%;
-    max-height: 230px;
-    object-fit: contain;
-    margin-top: 25px;
-}
-
-.moon {
-    position: absolute;
-    top: -5px;
-    right: 25px;
-    font-size: 34px;
-    opacity: 0.85;
-}
-
-.top-stars {
-    position: absolute;
-    top: -10px;
-    left: 20px;
-    font-size: 20px;
-    opacity: 0.7;
-}
-
-.bottom-stars {
-    position: absolute;
-    bottom: -5px;
-    right: 30px;
-    font-size: 18px;
-    opacity: 0.6;
-}
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------
-# الهيدر (مع الزينة)
+# الهيدر + اللوجو
 # -----------------------
-st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center'>", unsafe_allow_html=True)
 
-st.markdown("""
-<div class="header-decor">
-    <div class="moon">🌙</div>
-    <div class="top-stars">✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧</div>
+if os.path.exists("logo.png"):
+    st.image("logo.png", use_container_width=True)
 
-    <img src="logo.png" class="logo-img">
-
-    <div class="bottom-stars">✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦</div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<h1>🛒 TechZone</h1>
-<p>عالم التقنية - أفضل الأجهزة 🔥</p>
-""", unsafe_allow_html=True)
+st.markdown("<h1>🛒 TechZone</h1>", unsafe_allow_html=True)
+st.markdown("<p>عالم التقنية 🔥</p>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -119,15 +58,13 @@ if "role" not in st.session_state:
 if "show_login" not in st.session_state:
     st.session_state.show_login = False
 
-if "settings" not in st.session_state:
-    st.session_state.settings = {
-        "whatsapp": "0515906039",
-        "facebook": "https://www.facebook.com/",
-        "instagram": "https://instagram.com/"
-    }
-
 if "cart" not in st.session_state:
     st.session_state.cart = []
+
+if "settings" not in st.session_state:
+    st.session_state.settings = {
+        "whatsapp": "0515906039"
+    }
 
 # -----------------------
 # البيانات
@@ -141,11 +78,9 @@ def load_data():
         if "رقم" not in df.columns:
             df.insert(0, "رقم", range(1, len(df) + 1))
 
-        if "السعر" not in df.columns:
-            df["السعر"] = 0
-
         return df
-    return pd.DataFrame(columns=["رقم", "القطعة", "الموديل", "الكمية", "الحالة", "السعر", "الصورة"])
+
+    return pd.DataFrame(columns=["رقم","القطعة","الموديل","الكمية","الحالة","السعر","الصورة"])
 
 def save_data(df):
     df.to_csv(FILE_NAME, index=False)
@@ -174,11 +109,11 @@ if st.session_state.show_login:
         else:
             st.error("كلمة السر غلط ❌")
 
-    password = st.text_input("كلمة السر", type="password", key="password", on_change=login)
+    st.text_input("كلمة السر", type="password", key="password")
 
     if st.button("دخول"):
         login()
-        st.rerun()   # ✅ هون مسموح
+        st.rerun()
 
     if st.button("إلغاء"):
         st.session_state.show_login = False
@@ -204,7 +139,7 @@ if st.session_state.role == "admin":
         model = st.text_input("الموديل")
         qty = st.number_input("الكمية", min_value=1)
         price = st.number_input("السعر", min_value=0)
-        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
+        image = st.file_uploader("📷 صورة", type=["png","jpg","jpeg"])
 
         if st.form_submit_button("حفظ"):
 
@@ -217,7 +152,11 @@ if st.session_state.role == "admin":
 
             new_id = 1 if df.empty else int(df["رقم"].max()) + 1
 
-            new_row = pd.DataFrame([[new_id, name, model, qty, "جديد", price, img_path]], columns=df.columns)
+            new_row = pd.DataFrame(
+                [[new_id, name, model, qty, "جديد", price, img_path]],
+                columns=df.columns
+            )
+
             df = pd.concat([df, new_row], ignore_index=True)
             save_data(df)
 
@@ -231,6 +170,11 @@ else:
 
     st.title("🛒 المنتجات")
 
+    # 🔥 تجهيز رقم واتساب
+    phone = st.session_state.settings["whatsapp"]
+    if phone.startswith("0"):
+        phone = "972" + phone[1:]
+
     for _, row in df.iterrows():
 
         st.markdown(f"""
@@ -242,14 +186,34 @@ else:
         if row["الصورة"] and os.path.exists(row["الصورة"]):
             st.image(row["الصورة"], width=200)
 
+        # زر إضافة للسلة
         if st.button(f"🛒 أضف للسلة {row['رقم']}"):
             st.session_state.cart.append(row["القطعة"])
             st.success("تمت الإضافة ✅")
 
+        # 🔥 زر شراء مباشر واتساب
+        message = urllib.parse.quote(
+            f"مرحبا، بدي أطلب: {row['القطعة']} - السعر {row['السعر']} ₪"
+        )
+
+        whatsapp_url = f"https://wa.me/{phone}?text={message}"
+
+        st.markdown(f"""
+        <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">
+        📱 شراء عبر واتساب
+        </a>
+        """, unsafe_allow_html=True)
+
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # -----------------------
+    # السلة
+    # -----------------------
     st.markdown("---")
     st.header("🛒 السلة")
 
-    for item in st.session_state.cart:
-        st.write(item)
+    if st.session_state.cart:
+        for item in st.session_state.cart:
+            st.write(item)
+    else:
+        st.write("السلة فارغة")
