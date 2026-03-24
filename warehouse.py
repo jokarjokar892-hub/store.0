@@ -9,7 +9,7 @@ import urllib.parse
 st.set_page_config(page_title="TechZone", page_icon="🛒", layout="wide")
 
 # -----------------------
-# CSS
+# 🔥 CSS
 # -----------------------
 st.markdown("""
 <style>
@@ -61,13 +61,6 @@ if "show_login" not in st.session_state:
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
-# ✅ حل المشكلة (تنظيف السلة القديمة)
-clean_cart = []
-for item in st.session_state.cart:
-    if isinstance(item, dict):
-        clean_cart.append(item)
-st.session_state.cart = clean_cart
-
 if "settings" not in st.session_state:
     st.session_state.settings = {
         "whatsapp": "0515906039"
@@ -81,12 +74,9 @@ FILE_NAME = "warehouse.csv"
 def load_data():
     if os.path.exists(FILE_NAME):
         df = pd.read_csv(FILE_NAME)
-
         if "رقم" not in df.columns:
             df.insert(0, "رقم", range(1, len(df) + 1))
-
         return df
-
     return pd.DataFrame(columns=["رقم","القطعة","الموديل","الكمية","الحالة","السعر","الصورة"])
 
 def save_data(df):
@@ -175,142 +165,117 @@ if st.session_state.role == "admin":
 # =========================
 else:
 
-   # -----------------------
-# 🛒 السلة (شكل احترافي)
-# -----------------------
-st.markdown("---")
-st.header("🛒 السلة")
+    st.title("🛒 المنتجات")
 
-if len(st.session_state.cart) == 0:
-    st.info("السلة فارغة 🛒")
-else:
-    total = 0
+    phone = st.session_state.settings["whatsapp"]
+    if phone.startswith("0"):
+        phone = "972" + phone[1:]
 
-    for i, item in enumerate(st.session_state.cart):
+    # عرض المنتجات
+    for _, row in df.iterrows():
 
         st.markdown(f"""
-        <div style="
-            background:#1e1e1e;
-            padding:15px;
-            border-radius:12px;
-            margin-bottom:10px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        ">
-            <div>
-                <div style="font-size:18px;font-weight:bold;">
-                    {item['name']}
-                </div>
-                <div style="color:gray;">
-                    الكمية: {item['qty']}
-                </div>
-            </div>
+        <div class="product-card">
+            <h3>{row['القطعة']}</h3>
+            <p>💰 {row['السعر']} ₪</p>
+        """, unsafe_allow_html=True)
 
-            <div style="text-align:right;">
-                <div style="font-size:16px;">
-                    💰 {item['price']} ₪
-                </div>
-            </div>
+        if row["الصورة"] and os.path.exists(row["الصورة"]):
+            st.image(row["الصورة"], width=200)
+
+        # إضافة للسلة (مع الكمية)
+        if st.button(f"🛒 أضف للسلة {row['رقم']}"):
+
+            found = False
+            for item in st.session_state.cart:
+                if item["name"] == row["القطعة"]:
+                    item["qty"] += 1
+                    found = True
+                    break
+
+            if not found:
+                st.session_state.cart.append({
+                    "name": row["القطعة"],
+                    "price": row["السعر"],
+                    "qty": 1
+                })
+
+            st.success("تمت الإضافة ✅")
+
+        # واتساب
+        message = urllib.parse.quote(
+            f"مرحبا، بدي أطلب: {row['القطعة']} - السعر {row['السعر']} ₪"
+        )
+        whatsapp_url = f"https://wa.me/{phone}?text={message}"
+
+        st.markdown(f"""
+        <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">
+        📱 شراء مباشر
+        </a>
         </div>
         """, unsafe_allow_html=True)
 
-        # زر حذف
-        if st.button(f"❌ حذف {item['name']}", key=f"del_{i}"):
-            st.session_state.cart.pop(i)
-            st.rerun()
-
-        total += item["price"] * item["qty"]
-
-    st.markdown("---")
-
-    # 💰 المجموع بشكل جميل
-    st.markdown(f"""
-    <div style="
-        background:#111;
-        padding:15px;
-        border-radius:12px;
-        text-align:center;
-        font-size:20px;
-        font-weight:bold;
-    ">
-        💰 المجموع الكلي: {total} ₪
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 📱 زر واتساب
-    cart_text = "\n".join([
-        f"{item['name']} × {item['qty']}"
-        for item in st.session_state.cart
-    ])
-
-    message = urllib.parse.quote(
-        f"مرحبا، بدي أطلب:\n{cart_text}\n\nالمجموع: {total} ₪"
-    )
-
-    whatsapp_url = f"https://wa.me/{phone}?text={message}"
-
-    st.markdown(f"""
-    <br>
-    <a href="{whatsapp_url}" target="_blank"
-    style="
-        background:#25D366;
-        color:white;
-        padding:12px 20px;
-        border-radius:10px;
-        text-decoration:none;
-        font-size:18px;
-        font-weight:bold;
-        display:block;
-        text-align:center;
-    ">
-    📱 إتمام الطلب عبر واتساب
-    </a>
-    """, unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
     # -----------------------
-    # 🛒 السلة
+    # 🛒 السلة (شكل جميل)
     # -----------------------
     st.markdown("---")
     st.header("🛒 السلة")
 
     if len(st.session_state.cart) == 0:
-        st.write("السلة فارغة")
+        st.info("السلة فارغة 🛒")
+
     else:
         total = 0
 
         for i, item in enumerate(st.session_state.cart):
 
-            col1, col2, col3, col4 = st.columns([4,2,2,1])
+            st.markdown(f"""
+            <div style="
+                background:#1e1e1e;
+                padding:15px;
+                border-radius:12px;
+                margin-bottom:10px;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            ">
+                <div>
+                    <div style="font-size:18px;font-weight:bold;">
+                        {item['name']}
+                    </div>
+                    <div style="color:gray;">
+                        الكمية: {item['qty']}
+                    </div>
+                </div>
 
-            with col1:
-                st.write(item["name"])
+                <div>
+                    💰 {item['price']} ₪
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            with col2:
-                st.write(f"{item['price']} ₪")
-
-            with col3:
-                qty = st.number_input(
-                    "الكمية",
-                    min_value=1,
-                    value=item["qty"],
-                    key=f"qty_{i}"
-                )
-                item["qty"] = qty
-
-            with col4:
-                if st.button("❌", key=f"del_{i}"):
-                    st.session_state.cart.pop(i)
-                    st.rerun()
+            if st.button(f"❌ حذف {i}", key=f"del_{i}"):
+                st.session_state.cart.pop(i)
+                st.rerun()
 
             total += item["price"] * item["qty"]
 
         st.markdown("---")
-        st.write(f"💰 المجموع: {total} ₪")
 
-        # إرسال الطلب واتساب
+        st.markdown(f"""
+        <div style="
+            background:#111;
+            padding:15px;
+            border-radius:12px;
+            text-align:center;
+            font-size:20px;
+            font-weight:bold;
+        ">
+            💰 المجموع: {total} ₪
+        </div>
+        """, unsafe_allow_html=True)
+
+        # إرسال الطلب
         cart_text = "\n".join([
             f"{item['name']} × {item['qty']}"
             for item in st.session_state.cart
@@ -323,8 +288,18 @@ else:
         whatsapp_url = f"https://wa.me/{phone}?text={message}"
 
         st.markdown(f"""
-        <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">
+        <br>
+        <a href="{whatsapp_url}" target="_blank"
+        style="
+            background:#25D366;
+            color:white;
+            padding:12px;
+            border-radius:10px;
+            text-decoration:none;
+            display:block;
+            text-align:center;
+            font-size:18px;
+        ">
         📱 إتمام الطلب عبر واتساب
         </a>
         """, unsafe_allow_html=True)
-    
