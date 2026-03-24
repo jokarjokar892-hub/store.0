@@ -61,6 +61,13 @@ if "show_login" not in st.session_state:
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
+# ✅ حل المشكلة (تنظيف السلة القديمة)
+clean_cart = []
+for item in st.session_state.cart:
+    if isinstance(item, dict):
+        clean_cart.append(item)
+st.session_state.cart = clean_cart
+
 if "settings" not in st.session_state:
     st.session_state.settings = {
         "whatsapp": "0515906039"
@@ -185,7 +192,7 @@ else:
         if row["الصورة"] and os.path.exists(row["الصورة"]):
             st.image(row["الصورة"], width=200)
 
-        # ✅ إضافة للسلة (معدلة)
+        # ✅ إضافة للسلة (مصححة)
         if st.button(f"🛒 أضف للسلة {row['رقم']}"):
 
             found = False
@@ -224,7 +231,7 @@ else:
         st.markdown("</div>", unsafe_allow_html=True)
 
     # -----------------------
-    # 🛒 السلة (معدلة بالكامل)
+    # 🛒 السلة
     # -----------------------
     st.markdown("---")
     st.header("🛒 السلة")
@@ -280,3 +287,4 @@ else:
         📱 إتمام الطلب عبر واتساب
         </a>
         """, unsafe_allow_html=True)
+    
