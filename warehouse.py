@@ -9,22 +9,18 @@ import urllib.parse
 st.set_page_config(page_title="TechZone", layout="wide")
 
 # -----------------------
-# ستايل احترافي
+# ستايل
 # -----------------------
 st.markdown("""
 <style>
-body {
-    background-color: #0f172a;
-}
 .card {
     padding: 15px;
     border-radius: 15px;
     background-color: #1e293b;
     margin-bottom: 15px;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.4);
 }
 .price {
-    color: #f59e0b;
+    color: orange;
     font-size: 20px;
     font-weight: bold;
 }
@@ -41,15 +37,20 @@ if "show_login" not in st.session_state:
     st.session_state.show_login = False
 
 if "settings" not in st.session_state:
-    st.session_state.settings = {
-        "whatsapp": "966XXXXXXXX"
-    }
+    st.session_state.settings = {"whatsapp": "966XXXXXXXX"}
 
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
+# 🔥 السلايدر
+if "banners" not in st.session_state:
+    st.session_state.banners = []
+
+if "banner_index" not in st.session_state:
+    st.session_state.banner_index = 0
+
 # -----------------------
-# ملف البيانات
+# البيانات
 # -----------------------
 FILE_NAME = "warehouse.csv"
 
@@ -73,10 +74,37 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# البانر + اللوقو
+# السلايدر
 # -----------------------
-st.image("banner.jpg", use_column_width=True)
+if st.session_state.banners:
+    current = st.session_state.banner_index
+    total = len(st.session_state.banners)
 
+    st.image(st.session_state.banners[current], use_column_width=True)
+
+    col1, col2, col3 = st.columns([1,2,1])
+
+    with col1:
+        if st.button("⬅️"):
+            st.session_state.banner_index = (current - 1) % total
+            st.rerun()
+
+    with col3:
+        if st.button("➡️"):
+            st.session_state.banner_index = (current + 1) % total
+            st.rerun()
+
+    dots = ""
+    for i in range(total):
+        dots += "🔵 " if i == current else "⚪ "
+
+    st.markdown(f"<center>{dots}</center>", unsafe_allow_html=True)
+else:
+    st.image("banner.jpg", use_column_width=True)
+
+# -----------------------
+# اللوقو
+# -----------------------
 col1, col2 = st.columns([1,5])
 with col1:
     st.image("logo.png", width=120)
@@ -84,7 +112,7 @@ with col2:
     st.markdown("## TechZone Store")
 
 # -----------------------
-# زر القائمة
+# زر الدخول
 # -----------------------
 if st.button("⋮"):
     st.session_state.show_login = True
@@ -112,7 +140,7 @@ if st.session_state.show_login:
     st.stop()
 
 # =========================
-# 👨‍💼 المدير
+# 👨‍💼 الأدمن
 # =========================
 if st.session_state.role == "admin":
 
@@ -122,12 +150,35 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    st.sidebar.header("📱 إعدادات التواصل")
+    # 🔥 إدارة البانر
+    st.sidebar.header("🖼️ البانر")
+
+    banner_files = st.sidebar.file_uploader(
+        "ارفع صور البانر",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True
+    )
+
+    if st.sidebar.button("📥 حفظ البانرات"):
+        os.makedirs("banners", exist_ok=True)
+
+        for file in banner_files:
+            path = f"banners/{file.name}"
+            with open(path, "wb") as f:
+                f.write(file.getbuffer())
+
+            st.session_state.banners.append(path)
+
+        st.success("تم رفع البانرات ✅")
+
+    # إعداد واتساب
+    st.sidebar.header("📱 واتساب")
     st.session_state.settings["whatsapp"] = st.sidebar.text_input(
         "رقم الواتساب", st.session_state.settings["whatsapp"]
     )
 
-    st.sidebar.header("➕ إضافة قطعة")
+    # إضافة منتج
+    st.sidebar.header("➕ إضافة منتج")
 
     with st.sidebar.form("add_form"):
         name = st.text_input("اسم القطعة")
@@ -135,13 +186,11 @@ if st.session_state.role == "admin":
         qty = st.number_input("الكمية", min_value=1)
         price = st.number_input("السعر", min_value=0)
         status = st.selectbox("الحالة", ["جديد", "مستعمل", "للفحص"])
-        image = st.file_uploader("📷 صورة المنتج", type=["png", "jpg", "jpeg"])
+        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
 
-        submitted = st.form_submit_button("حفظ")
+        if st.form_submit_button("حفظ"):
 
-        if submitted:
             img_path = ""
-
             if image:
                 os.makedirs("images", exist_ok=True)
                 img_path = f"images/{image.name}"
@@ -158,103 +207,55 @@ if st.session_state.role == "admin":
             df = pd.concat([df, new_row], ignore_index=True)
             save_data(df)
 
-            st.success(f"تمت الإضافة ✅ رقم المنتج: #{new_id}")
+            st.success("تمت الإضافة ✅")
             st.rerun()
 
-    st.subheader("📋 إدارة المنتجات")
-
+    # عرض المنتجات
     for i, row in df.iterrows():
-
-        with st.expander(f"#{row['رقم']} - {row['القطعة']}"):
-
-            if row["الصورة"] and os.path.exists(row["الصورة"]):
+        with st.expander(f"{row['القطعة']}"):
+            if row["الصورة"]:
                 st.image(row["الصورة"], width=150)
 
-            new_name = st.text_input("اسم القطعة", row["القطعة"], key=f"name{i}")
-            new_model = st.text_input("الموديل", row["الموديل"], key=f"model{i}")
-            new_qty = st.number_input("الكمية", value=int(row["الكمية"]), key=f"qty{i}")
-            new_price = st.number_input("السعر", value=int(row["السعر"]), key=f"price{i}")
-
-            new_status = st.selectbox(
-                "الحالة",
-                ["جديد", "مستعمل", "للفحص"],
-                index=["جديد", "مستعمل", "للفحص"].index(row["الحالة"]),
-                key=f"status{i}"
-            )
-
-            new_image = st.file_uploader("تغيير الصورة", key=f"img{i}")
-
-            if st.button("💾 حفظ", key=f"save{i}"):
-
-                df.at[i, "القطعة"] = new_name
-                df.at[i, "الموديل"] = new_model
-                df.at[i, "الكمية"] = new_qty
-                df.at[i, "الحالة"] = new_status
-                df.at[i, "السعر"] = new_price
-
-                if new_image:
-                    img_path = f"images/{new_image.name}"
-                    with open(img_path, "wb") as f:
-                        f.write(new_image.getbuffer())
-                    df.at[i, "الصورة"] = img_path
-
-                save_data(df)
-                st.success("تم التعديل ✅")
-                st.rerun()
-
-            if st.button("🗑 حذف", key=f"delete{i}"):
+            if st.button("🗑 حذف", key=i):
                 df = df.drop(i).reset_index(drop=True)
                 save_data(df)
-                st.warning("تم الحذف ❌")
                 st.rerun()
 
 # =========================
-# 👤 الزبون
+# 👤 المستخدم
 # =========================
 else:
 
-    st.subheader("🛒 منتجاتنا")
+    st.subheader("🛒 المنتجات")
 
     search = st.text_input("🔍 ابحث")
 
     cols = st.columns(3)
 
     for index, row in df.iterrows():
-
         if search.lower() in str(row["القطعة"]).lower():
 
             with cols[index % 3]:
                 st.markdown('<div class="card">', unsafe_allow_html=True)
 
-                if row["الصورة"] and os.path.exists(row["الصورة"]):
+                if row["الصورة"]:
                     st.image(row["الصورة"], use_column_width=True)
 
                 st.markdown(f"### {row['القطعة']}")
-                st.write(f"🔧 {row['الموديل']}")
+                st.write(row["الموديل"])
                 st.markdown(f"<div class='price'>{row['السعر']} ₪</div>", unsafe_allow_html=True)
 
-                whatsapp = st.session_state.settings["whatsapp"]
-                message = urllib.parse.quote(f"مرحبا، بدي أطلب {row['القطعة']}")
-                wa_link = f"https://wa.me/{whatsapp}?text={message}"
-
-                st.markdown(f"[📞 واتساب]({wa_link})")
-
-                if st.button(f"🛒 أضف للسلة {index}"):
+                if st.button(f"🛒 {index}"):
                     st.session_state.cart.append(row.to_dict())
-                    st.success("تمت الإضافة ✅")
 
                 st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🛒 السلة
-    st.subheader("🛒 سلة المشتريات")
+    # السلة
+    st.subheader("🛒 السلة")
 
-    if st.session_state.cart:
-        total = 0
-        for item in st.session_state.cart:
-            st.write(f"{item['القطعة']} - {item['السعر']} ₪")
-            total += item["السعر"]
+    total = 0
+    for item in st.session_state.cart:
+        st.write(f"{item['القطعة']} - {item['السعر']} ₪")
+        total += item["السعر"]
 
-        st.write(f"💰 المجموع: {total} ₪")
-
-    else:
-        st.info("السلة فارغة")
+    st.write(f"💰 المجموع: {total} ₪")
