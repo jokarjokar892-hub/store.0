@@ -19,7 +19,7 @@ if "show_login" not in st.session_state:
 
 if "settings" not in st.session_state:
     st.session_state.settings = {
-        "whatsapp": "966XXXXXXXX"
+        "whatsapp": "0515906039"
     }
 
 if "cart" not in st.session_state:
@@ -70,7 +70,7 @@ if st.session_state.show_login:
     password = st.text_input("كلمة السر", type="password")
 
     if st.button("دخول"):
-        if password == "7D4E976D":
+        if password == "7B4E976D":
             st.session_state.role = "admin"
             st.session_state.show_login = False
             st.rerun()
