@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+import urllib.parse
 
 # -----------------------
 # إعداد الصفحة
 # -----------------------
-st.set_page_config(page_title="المستودع", layout="wide")
+st.set_page_config(page_title="TechZone", layout="wide")
 
 # -----------------------
 # الحالة
@@ -16,13 +17,13 @@ if "role" not in st.session_state:
 if "show_login" not in st.session_state:
     st.session_state.show_login = False
 
-# إعدادات التواصل
 if "settings" not in st.session_state:
     st.session_state.settings = {
-        "whatsapp": "966XXXXXXXX",
-        "facebook": "https://facebook.com/yourpage",
-        "instagram": "https://instagram.com/yourpage"
+        "whatsapp": "966XXXXXXXX"
     }
+
+if "cart" not in st.session_state:
+    st.session_state.cart = []
 
 # -----------------------
 # ملف البيانات
@@ -49,39 +50,41 @@ def save_data(df):
 df = load_data()
 
 # -----------------------
-# ⚙️ زر الترس
+# اللوقو
 # -----------------------
-if st.button("⚙️"):
+st.image("logo.png", width=200)
+st.markdown("## TechZone")
+
+# -----------------------
+# زر الثلاث نقاط
+# -----------------------
+if st.button("⋮"):
     st.session_state.show_login = True
 
 # -----------------------
-# 🔐 تسجيل دخول المدير
+# تسجيل الدخول
 # -----------------------
 if st.session_state.show_login:
 
     st.subheader("🔐 دخول المدير")
     password = st.text_input("كلمة السر", type="password")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("دخول"):
-            if password == "7G4E976D":
-                st.session_state.role = "admin"
-                st.session_state.show_login = False
-                st.rerun()
-            else:
-                st.error("كلمة السر غلط ❌")
-
-    with col2:
-        if st.button("إلغاء"):
+    if st.button("دخول"):
+        if password == "7G4E976D":
+            st.session_state.role = "admin"
             st.session_state.show_login = False
             st.rerun()
+        else:
+            st.error("كلمة السر غلط ❌")
+
+    if st.button("إلغاء"):
+        st.session_state.show_login = False
+        st.rerun()
 
     st.stop()
 
 # =========================
-# 👨‍💼 واجهة المدير
+# 👨‍💼 المدير
 # =========================
 if st.session_state.role == "admin":
 
@@ -91,19 +94,10 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    # إعدادات التواصل
+    # واتساب فقط
     st.sidebar.header("📱 إعدادات التواصل")
-
     st.session_state.settings["whatsapp"] = st.sidebar.text_input(
         "رقم الواتساب", st.session_state.settings["whatsapp"]
-    )
-
-    st.session_state.settings["facebook"] = st.sidebar.text_input(
-        "رابط فيسبوك", st.session_state.settings["facebook"]
-    )
-
-    st.session_state.settings["instagram"] = st.sidebar.text_input(
-        "رابط إنستغرام", st.session_state.settings["instagram"]
     )
 
     # إضافة منتج
@@ -141,10 +135,14 @@ if st.session_state.role == "admin":
             st.success(f"تمت الإضافة ✅ رقم المنتج: #{new_id}")
             st.rerun()
 
+    # 🔍 البحث للمدير
+    admin_search = st.text_input("🔍 ابحث داخل المنتجات")
+    filtered_df = df[df["القطعة"].astype(str).str.contains(admin_search, case=False)]
+
     # إدارة المنتجات
     st.subheader("📋 إدارة المنتجات")
 
-    for i, row in df.iterrows():
+    for i, row in filtered_df.iterrows():
 
         with st.expander(f"#{row['رقم']} - {row['القطعة']}"):
 
@@ -194,7 +192,7 @@ if st.session_state.role == "admin":
                     st.rerun()
 
 # =========================
-# 👤 واجهة الزبون
+# 👤 الزبون
 # =========================
 else:
 
@@ -209,21 +207,41 @@ else:
             st.markdown(f"### 📦 {row['القطعة']}")
             st.write(f"🔧 الموديل: {row['الموديل']}")
             st.write(f"💰 السعر: {row['السعر']} شيكل ₪")
-            st.write(f"📊 المتوفر: {row['الكمية']}")
             st.write(f"📌 الحالة: {row['الحالة']}")
 
             if row["الصورة"] and os.path.exists(row["الصورة"]):
                 st.image(row["الصورة"], width=200)
 
-            # زر تواصل واتساب
+            # واتساب فقط
             whatsapp = st.session_state.settings["whatsapp"]
-            message = f"مرحبا، بدي أطلب {row['القطعة']}"
+            message = urllib.parse.quote(f"مرحبا، بدي أطلب {row['القطعة']}")
             wa_link = f"https://wa.me/{whatsapp}?text={message}"
 
             st.markdown(f"[📞 اطلب عبر واتساب]({wa_link})")
 
-            # باقي الروابط
-            st.markdown(f"[فيسبوك]({st.session_state.settings['facebook']})")
-            st.markdown(f"[إنستغرام]({st.session_state.settings['instagram']})")
+            # 🛒 إضافة للسلة
+            if st.button(f"🛒 أضف للسلة #{index}"):
+                st.session_state.cart.append(row.to_dict())
+                st.success("تمت الإضافة للسلة ✅")
 
             st.markdown("---")
+
+    # 🛒 السلة
+    st.subheader("🛒 سلة المشتريات")
+
+    if st.session_state.cart:
+        for item in st.session_state.cart:
+            st.write(f"- {item['القطعة']} | {item['السعر']} ₪")
+
+        total = sum(item["السعر"] for item in st.session_state.cart)
+        st.write(f"💰 المجموع: {total} ₪")
+
+        if st.button("📞 طلب الكل عبر واتساب"):
+            whatsapp = st.session_state.settings["whatsapp"]
+            items_text = "\n".join([item["القطعة"] for item in st.session_state.cart])
+            message = urllib.parse.quote(f"مرحبا، بدي أطلب:\n{items_text}")
+            wa_link = f"https://wa.me/{whatsapp}?text={message}"
+
+            st.markdown(f"[اضغط لإرسال الطلب]({wa_link})")
+    else:
+        st.info("السلة فارغة")
