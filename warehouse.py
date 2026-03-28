@@ -52,7 +52,7 @@ df = load_data()
 # -----------------------
 # اللوقو
 # -----------------------
-st.image("logo.png", width=200)
+st.image("logo.png", width=300)
 st.markdown("## TechZone")
 
 # -----------------------
@@ -70,7 +70,7 @@ if st.session_state.show_login:
     password = st.text_input("كلمة السر", type="password")
 
     if st.button("دخول"):
-        if password == "7G4E976D":
+        if password == "7D4E976D":
             st.session_state.role = "admin"
             st.session_state.show_login = False
             st.rerun()
