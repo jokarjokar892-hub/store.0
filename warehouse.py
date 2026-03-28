@@ -54,7 +54,7 @@ df = load_data()
 banners_df = load_banners()
 
 # -----------------------
-# 🎯 سلايدر بالسحب (Drag)
+# 🎯 السلايدر (سحب بالماوس)
 # -----------------------
 if not banners_df.empty:
 
@@ -91,6 +91,7 @@ if not banners_df.empty:
     st.components.v1.html(slider_html, height=320)
 
 else:
+    # صورة افتراضية (اللي عندك)
     st.image("banner.jpg", use_column_width=True)
 
 # -----------------------
@@ -139,9 +140,9 @@ if st.session_state.role == "admin":
         st.rerun()
 
     # -----------------------
-    # 🖼️ البانرات
+    # 🖼️ إدارة البانرات
     # -----------------------
-    st.sidebar.header("🖼️ إدارة البانرات")
+    st.sidebar.header("🖼️ البانرات")
 
     banner_file = st.sidebar.file_uploader("اختر صورة بانر")
 
@@ -159,8 +160,6 @@ if st.session_state.role == "admin":
 
             st.success("تمت إضافة البانر ✅")
             st.rerun()
-        else:
-            st.warning("ارفع صورة أولاً")
 
     st.sidebar.subheader("📂 الصور الحالية")
 
@@ -185,7 +184,7 @@ if st.session_state.role == "admin":
     )
 
     # -----------------------
-    # إضافة منتج (بدون أي منتجات جاهزة)
+    # إضافة منتج (فقط من الأدمن)
     # -----------------------
     st.sidebar.header("➕ إضافة قطعة")
 
@@ -224,29 +223,30 @@ if st.session_state.role == "admin":
 # =========================
 else:
 
-    st.subheader("🛒 المنتجات")
+    st.subheader("🛒 عرض المنتجات")
 
     search = st.text_input("🔍 ابحث")
 
     for index, row in df.iterrows():
+
         if search.lower() in str(row["القطعة"]).lower():
 
-            st.markdown(f"### {row['القطعة']}")
-            st.write(row["الموديل"])
-            st.write(f"💰 {row['السعر']} ₪")
+            st.markdown(f"### 📦 {row['القطعة']}")
+            st.write(f"🔧 الموديل: {row['الموديل']}")
+            st.write(f"💰 السعر: {row['السعر']} ₪")
+            st.write(f"📌 الحالة: {row['الحالة']}")
 
             if row["الصورة"]:
                 st.image(row["الصورة"], width=200)
 
-            # زر إضافة للسلة
-            if st.button(f"🛒 أضف {index}"):
+            if st.button(f"🛒 أضف للسلة #{index}"):
                 st.session_state.cart.append(row.to_dict())
-                st.success("تمت الإضافة للسلة")
+                st.success("تمت الإضافة للسلة ✅")
 
             st.markdown("---")
 
     # -----------------------
-    # 🛒 السلة + واتساب
+    # 🛒 السلة
     # -----------------------
     st.subheader("🛒 السلة")
 
