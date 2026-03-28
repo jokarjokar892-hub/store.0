@@ -20,9 +20,6 @@ if "settings" not in st.session_state:
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
-if "banner_index" not in st.session_state:
-    st.session_state.banner_index = 0
-
 # -----------------------
 # ملفات
 # -----------------------
@@ -57,33 +54,41 @@ df = load_data()
 banners_df = load_banners()
 
 # -----------------------
-# 🎯 السلايدر (فوق)
+# 🎯 سلايدر بالسحب (Drag)
 # -----------------------
-st.subheader("")
-
 if not banners_df.empty:
-    total = len(banners_df)
-    idx = st.session_state.banner_index
 
-    st.image(banners_df.iloc[idx]["path"], use_column_width=True)
+    images = banners_df["path"].tolist()
 
-    col1, col2, col3 = st.columns([1,2,1])
+    slider_html = f"""
+    <style>
+    .slider {{
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }}
 
-    with col1:
-        if st.button("⬅️"):
-            st.session_state.banner_index = (idx - 1) % total
-            st.rerun()
+    .slider img {{
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        scroll-snap-align: start;
+        border-radius: 10px;
+        margin-right: 10px;
+    }}
 
-    with col3:
-        if st.button("➡️"):
-            st.session_state.banner_index = (idx + 1) % total
-            st.rerun()
+    .slider::-webkit-scrollbar {{
+        display: none;
+    }}
+    </style>
 
-    # نقاط
-    dots = ""
-    for i in range(total):
-        dots += "🔵 " if i == idx else "⚪ "
-    st.markdown(f"<center>{dots}</center>", unsafe_allow_html=True)
+    <div class="slider">
+        {''.join([f'<img src="{img}">' for img in images])}
+    </div>
+    """
+
+    st.components.v1.html(slider_html, height=320)
 
 else:
     st.image("banner.jpg", use_column_width=True)
@@ -180,7 +185,7 @@ if st.session_state.role == "admin":
     )
 
     # -----------------------
-    # إضافة منتج (رجعته كامل)
+    # إضافة منتج (بدون أي منتجات جاهزة)
     # -----------------------
     st.sidebar.header("➕ إضافة قطعة")
 
@@ -233,26 +238,40 @@ else:
             if row["الصورة"]:
                 st.image(row["الصورة"], width=200)
 
-            # واتساب
-            whatsapp = st.session_state.settings["whatsapp"]
-            message = urllib.parse.quote(f"مرحبا بدي أطلب {row['القطعة']}")
-            link = f"https://wa.me/{whatsapp}?text={message}"
-
-            st.markdown(f"[📞 اطلب واتساب]({link})")
-
-            # سلة
+            # زر إضافة للسلة
             if st.button(f"🛒 أضف {index}"):
                 st.session_state.cart.append(row.to_dict())
-                st.success("تمت الإضافة")
+                st.success("تمت الإضافة للسلة")
 
             st.markdown("---")
 
-    # السلة
+    # -----------------------
+    # 🛒 السلة + واتساب
+    # -----------------------
     st.subheader("🛒 السلة")
 
-    total = 0
-    for item in st.session_state.cart:
-        st.write(f"{item['القطعة']} - {item['السعر']} ₪")
-        total += item["السعر"]
+    if st.session_state.cart:
 
-    st.write(f"💰 المجموع: {total} ₪")
+        total = 0
+        items_text = ""
+
+        for item in st.session_state.cart:
+            st.write(f"{item['القطعة']} - {item['السعر']} ₪")
+            total += item["السعر"]
+            items_text += f"- {item['القطعة']}\n"
+
+        st.write(f"💰 المجموع: {total} ₪")
+
+        if st.button("📞 طلب الكل عبر واتساب"):
+            whatsapp = st.session_state.settings["whatsapp"]
+
+            message = urllib.parse.quote(
+                f"مرحبا، بدي أطلب:\n{items_text}\nالمجموع: {total} ₪"
+            )
+
+            wa_link = f"https://wa.me/{whatsapp}?text={message}"
+
+            st.markdown(f"[اضغط هون لإرسال الطلب]({wa_link})")
+
+    else:
+        st.info("السلة فارغة")
