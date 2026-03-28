@@ -42,63 +42,70 @@ if "settings" not in st.session_state:
 if "cart" not in st.session_state:
     st.session_state.cart = []
 
-# 🔥 السلايدر
-if "banners" not in st.session_state:
-    st.session_state.banners = []
-
 if "banner_index" not in st.session_state:
     st.session_state.banner_index = 0
 
 # -----------------------
-# البيانات
+# ملفات
 # -----------------------
 FILE_NAME = "warehouse.csv"
+BANNER_FILE = "banners.csv"
 
+# -----------------------
+# تحميل البيانات
+# -----------------------
 def load_data():
     if os.path.exists(FILE_NAME):
         df = pd.read_csv(FILE_NAME)
-
         if "رقم" not in df.columns:
             df.insert(0, "رقم", range(1, len(df) + 1))
-
         if "السعر" not in df.columns:
             df["السعر"] = 0
-
         return df
-    else:
-        return pd.DataFrame(columns=["رقم", "القطعة", "الموديل", "الكمية", "الحالة", "السعر", "الصورة"])
+    return pd.DataFrame(columns=["رقم","القطعة","الموديل","الكمية","الحالة","السعر","الصورة"])
 
 def save_data(df):
     df.to_csv(FILE_NAME, index=False)
 
+def load_banners():
+    if os.path.exists(BANNER_FILE):
+        return pd.read_csv(BANNER_FILE)
+    return pd.DataFrame(columns=["path"])
+
+def save_banners(df):
+    df.to_csv(BANNER_FILE, index=False)
+
 df = load_data()
+banners_df = load_banners()
 
 # -----------------------
-# السلايدر
+# 🎯 السلايدر
 # -----------------------
-if st.session_state.banners:
-    current = st.session_state.banner_index
-    total = len(st.session_state.banners)
+if not banners_df.empty:
 
-    st.image(st.session_state.banners[current], use_column_width=True)
+    total = len(banners_df)
+    index = st.session_state.banner_index
+
+    st.image(banners_df.iloc[index]["path"], use_column_width=True)
 
     col1, col2, col3 = st.columns([1,2,1])
 
     with col1:
         if st.button("⬅️"):
-            st.session_state.banner_index = (current - 1) % total
+            st.session_state.banner_index = (index - 1) % total
             st.rerun()
 
     with col3:
         if st.button("➡️"):
-            st.session_state.banner_index = (current + 1) % total
+            st.session_state.banner_index = (index + 1) % total
             st.rerun()
 
     dots = ""
     for i in range(total):
-        dots += "🔵 " if i == current else "⚪ "
+        dots += "🔵 " if i == index else "⚪ "
 
     st.markdown(f"<center>{dots}</center>", unsafe_allow_html=True)
+
 else:
     st.image("banner.jpg", use_column_width=True)
 
@@ -112,14 +119,11 @@ with col2:
     st.markdown("## TechZone Store")
 
 # -----------------------
-# زر الدخول
+# تسجيل الدخول
 # -----------------------
 if st.button("⋮"):
     st.session_state.show_login = True
 
-# -----------------------
-# تسجيل الدخول
-# -----------------------
 if st.session_state.show_login:
 
     st.subheader("🔐 دخول المدير")
@@ -151,27 +155,40 @@ if st.session_state.role == "admin":
         st.rerun()
 
     # 🔥 إدارة البانر
-    st.sidebar.header("🖼️ البانر")
+    st.sidebar.header("🖼️ إدارة البانرات")
 
-    banner_files = st.sidebar.file_uploader(
-        "ارفع صور البانر",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True
-    )
+    uploaded = st.sidebar.file_uploader("ارفع صورة بانر", type=["png","jpg","jpeg"])
 
-    if st.sidebar.button("📥 حفظ البانرات"):
-        os.makedirs("banners", exist_ok=True)
+    if st.sidebar.button("➕ إضافة بانر"):
+        if uploaded:
+            os.makedirs("banners", exist_ok=True)
+            path = f"banners/{uploaded.name}"
 
-        for file in banner_files:
-            path = f"banners/{file.name}"
             with open(path, "wb") as f:
-                f.write(file.getbuffer())
+                f.write(uploaded.getbuffer())
 
-            st.session_state.banners.append(path)
+            new = pd.DataFrame([[path]], columns=["path"])
+            banners_df = pd.concat([banners_df, new], ignore_index=True)
+            save_banners(banners_df)
 
-        st.success("تم رفع البانرات ✅")
+            st.success("تمت إضافة البانر ✅")
+            st.rerun()
 
-    # إعداد واتساب
+    st.sidebar.subheader("📂 البانرات الحالية")
+
+    for i, row in banners_df.iterrows():
+        col1, col2 = st.sidebar.columns([3,1])
+
+        with col1:
+            st.image(row["path"], width=100)
+
+        with col2:
+            if st.button("❌", key=f"del_banner_{i}"):
+                banners_df = banners_df.drop(i).reset_index(drop=True)
+                save_banners(banners_df)
+                st.rerun()
+
+    # واتساب
     st.sidebar.header("📱 واتساب")
     st.session_state.settings["whatsapp"] = st.sidebar.text_input(
         "رقم الواتساب", st.session_state.settings["whatsapp"]
@@ -185,8 +202,8 @@ if st.session_state.role == "admin":
         model = st.text_input("الموديل")
         qty = st.number_input("الكمية", min_value=1)
         price = st.number_input("السعر", min_value=0)
-        status = st.selectbox("الحالة", ["جديد", "مستعمل", "للفحص"])
-        image = st.file_uploader("📷 صورة", type=["png", "jpg", "jpeg"])
+        status = st.selectbox("الحالة", ["جديد","مستعمل","للفحص"])
+        image = st.file_uploader("📷 صورة", type=["png","jpg","jpeg"])
 
         if st.form_submit_button("حفظ"):
 
@@ -209,17 +226,6 @@ if st.session_state.role == "admin":
 
             st.success("تمت الإضافة ✅")
             st.rerun()
-
-    # عرض المنتجات
-    for i, row in df.iterrows():
-        with st.expander(f"{row['القطعة']}"):
-            if row["الصورة"]:
-                st.image(row["الصورة"], width=150)
-
-            if st.button("🗑 حذف", key=i):
-                df = df.drop(i).reset_index(drop=True)
-                save_data(df)
-                st.rerun()
 
 # =========================
 # 👤 المستخدم
