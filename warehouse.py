@@ -3,29 +3,7 @@ import pandas as pd
 import os
 import urllib.parse
 
-# -----------------------
-# إعداد الصفحة
-# -----------------------
 st.set_page_config(page_title="TechZone", layout="wide")
-
-# -----------------------
-# ستايل
-# -----------------------
-st.markdown("""
-<style>
-.card {
-    padding: 15px;
-    border-radius: 15px;
-    background-color: #1e293b;
-    margin-bottom: 15px;
-}
-.price {
-    color: orange;
-    font-size: 20px;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # -----------------------
 # الحالة
@@ -52,7 +30,7 @@ FILE_NAME = "warehouse.csv"
 BANNER_FILE = "banners.csv"
 
 # -----------------------
-# تحميل البيانات
+# دوال
 # -----------------------
 def load_data():
     if os.path.exists(FILE_NAME):
@@ -79,31 +57,32 @@ df = load_data()
 banners_df = load_banners()
 
 # -----------------------
-# 🎯 السلايدر
+# 🎯 السلايدر (فوق)
 # -----------------------
+st.subheader("")
+
 if not banners_df.empty:
-
     total = len(banners_df)
-    index = st.session_state.banner_index
+    idx = st.session_state.banner_index
 
-    st.image(banners_df.iloc[index]["path"], use_column_width=True)
+    st.image(banners_df.iloc[idx]["path"], use_column_width=True)
 
     col1, col2, col3 = st.columns([1,2,1])
 
     with col1:
         if st.button("⬅️"):
-            st.session_state.banner_index = (index - 1) % total
+            st.session_state.banner_index = (idx - 1) % total
             st.rerun()
 
     with col3:
         if st.button("➡️"):
-            st.session_state.banner_index = (index + 1) % total
+            st.session_state.banner_index = (idx + 1) % total
             st.rerun()
 
+    # نقاط
     dots = ""
     for i in range(total):
-        dots += "🔵 " if i == index else "⚪ "
-
+        dots += "🔵 " if i == idx else "⚪ "
     st.markdown(f"<center>{dots}</center>", unsafe_allow_html=True)
 
 else:
@@ -116,7 +95,7 @@ col1, col2 = st.columns([1,5])
 with col1:
     st.image("logo.png", width=120)
 with col2:
-    st.markdown("## TechZone Store")
+    st.title("TechZone")
 
 # -----------------------
 # تسجيل الدخول
@@ -154,18 +133,20 @@ if st.session_state.role == "admin":
         st.session_state.role = "guest"
         st.rerun()
 
-    # 🔥 إدارة البانر
+    # -----------------------
+    # 🖼️ البانرات
+    # -----------------------
     st.sidebar.header("🖼️ إدارة البانرات")
 
-    uploaded = st.sidebar.file_uploader("ارفع صورة بانر", type=["png","jpg","jpeg"])
+    banner_file = st.sidebar.file_uploader("اختر صورة بانر")
 
     if st.sidebar.button("➕ إضافة بانر"):
-        if uploaded:
+        if banner_file:
             os.makedirs("banners", exist_ok=True)
-            path = f"banners/{uploaded.name}"
+            path = f"banners/{banner_file.name}"
 
             with open(path, "wb") as f:
-                f.write(uploaded.getbuffer())
+                f.write(banner_file.getbuffer())
 
             new = pd.DataFrame([[path]], columns=["path"])
             banners_df = pd.concat([banners_df, new], ignore_index=True)
@@ -173,8 +154,10 @@ if st.session_state.role == "admin":
 
             st.success("تمت إضافة البانر ✅")
             st.rerun()
+        else:
+            st.warning("ارفع صورة أولاً")
 
-    st.sidebar.subheader("📂 البانرات الحالية")
+    st.sidebar.subheader("📂 الصور الحالية")
 
     for i, row in banners_df.iterrows():
         col1, col2 = st.sidebar.columns([3,1])
@@ -183,19 +166,23 @@ if st.session_state.role == "admin":
             st.image(row["path"], width=100)
 
         with col2:
-            if st.button("❌", key=f"del_banner_{i}"):
+            if st.button("❌", key=f"del{i}"):
                 banners_df = banners_df.drop(i).reset_index(drop=True)
                 save_banners(banners_df)
                 st.rerun()
 
+    # -----------------------
     # واتساب
+    # -----------------------
     st.sidebar.header("📱 واتساب")
     st.session_state.settings["whatsapp"] = st.sidebar.text_input(
         "رقم الواتساب", st.session_state.settings["whatsapp"]
     )
 
-    # إضافة منتج
-    st.sidebar.header("➕ إضافة منتج")
+    # -----------------------
+    # إضافة منتج (رجعته كامل)
+    # -----------------------
+    st.sidebar.header("➕ إضافة قطعة")
 
     with st.sidebar.form("add_form"):
         name = st.text_input("اسم القطعة")
@@ -203,7 +190,7 @@ if st.session_state.role == "admin":
         qty = st.number_input("الكمية", min_value=1)
         price = st.number_input("السعر", min_value=0)
         status = st.selectbox("الحالة", ["جديد","مستعمل","للفحص"])
-        image = st.file_uploader("📷 صورة", type=["png","jpg","jpeg"])
+        image = st.file_uploader("📷 صورة المنتج")
 
         if st.form_submit_button("حفظ"):
 
@@ -236,25 +223,29 @@ else:
 
     search = st.text_input("🔍 ابحث")
 
-    cols = st.columns(3)
-
     for index, row in df.iterrows():
         if search.lower() in str(row["القطعة"]).lower():
 
-            with cols[index % 3]:
-                st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown(f"### {row['القطعة']}")
+            st.write(row["الموديل"])
+            st.write(f"💰 {row['السعر']} ₪")
 
-                if row["الصورة"]:
-                    st.image(row["الصورة"], use_column_width=True)
+            if row["الصورة"]:
+                st.image(row["الصورة"], width=200)
 
-                st.markdown(f"### {row['القطعة']}")
-                st.write(row["الموديل"])
-                st.markdown(f"<div class='price'>{row['السعر']} ₪</div>", unsafe_allow_html=True)
+            # واتساب
+            whatsapp = st.session_state.settings["whatsapp"]
+            message = urllib.parse.quote(f"مرحبا بدي أطلب {row['القطعة']}")
+            link = f"https://wa.me/{whatsapp}?text={message}"
 
-                if st.button(f"🛒 {index}"):
-                    st.session_state.cart.append(row.to_dict())
+            st.markdown(f"[📞 اطلب واتساب]({link})")
 
-                st.markdown('</div>', unsafe_allow_html=True)
+            # سلة
+            if st.button(f"🛒 أضف {index}"):
+                st.session_state.cart.append(row.to_dict())
+                st.success("تمت الإضافة")
+
+            st.markdown("---")
 
     # السلة
     st.subheader("🛒 السلة")
